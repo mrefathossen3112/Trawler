@@ -1,5 +1,5 @@
 /* Service Worker — অ্যাপ ফাইল ফোনে রেখে দেয়, নেট ছাড়াই চালু হয় */
-const CACHE = 'trawler-v1';
+const CACHE = 'trawler-v3';
 const FILES = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -14,20 +14,27 @@ self.addEventListener('activate', e => {
   );
 });
 
-/* আগে ফোনের কপি দেখায় (দ্রুত/অফলাইন), পেছনে নেট থাকলে নতুন কপি এনে রাখে */
+/* নেট থাকলে সবসময় নতুন কপি (আপডেট সাথে সাথে পৌঁছায়);
+   নেট না থাকলে বা ৩ সেকেন্ডে সাড়া না পেলে ফোনের কপি */
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
-  const url = new URL(e.request.url);
-  if (url.origin !== location.origin) return;
+  if (new URL(e.request.url).origin !== location.origin) return;
   e.respondWith(
-    caches.open(CACHE).then(cache =>
-      cache.match(e.request, { ignoreSearch: true }).then(hit => {
-        const fresh = fetch(e.request).then(res => {
-          if (res && res.ok) cache.put(e.request, res.clone());
-          return res;
-        }).catch(() => hit || cache.match('./index.html'));
-        return hit || fresh;
-      })
-    )
+    caches.open(CACHE).then(cache => new Promise(resolve => {
+      let done = false;
+      const fromCache = () => cache.match(e.request, { ignoreSearch: true })
+        .then(h => h || cache.match('./index.html'));
+      const timer = setTimeout(() => {
+        fromCache().then(h => { if (h && !done) { done = true; resolve(h); } });
+      }, 3000);
+      fetch(e.request, { cache: 'no-cache' }).then(res => {
+        clearTimeout(timer);
+        if (res && res.ok) cache.put(e.request, res.clone());
+        if (!done) { done = true; resolve(res); }
+      }).catch(() => {
+        clearTimeout(timer);
+        fromCache().then(h => { if (!done) { done = true; resolve(h || Response.error()); } });
+      });
+    }))
   );
 });
