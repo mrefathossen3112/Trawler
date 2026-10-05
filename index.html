@@ -1,0 +1,1714 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ট্রলার হিসাব</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#075985">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f1f5f9;color:#0f172a;font-family:Arial,"Noto Sans Bengali",sans-serif}
+.top{background:#075985;color:white;padding:15px}
+.title{font-size:23px;font-weight:700}.sub{font-size:12px;margin-top:4px}
+.nav{display:flex;overflow:auto;background:#fff;border-bottom:1px solid #ddd;position:sticky;top:0;z-index:19}
+.nav button{border:0;background:#fff;padding:12px 14px;white-space:nowrap;font-weight:700;color:#075985}
+.nav button.on{background:#075985;color:#fff;border-radius:9px;margin:4px}
+.wrap{max-width:1100px;margin:auto;padding:12px}
+.page{display:none}.page.on{display:block}
+.card{background:#fff;border-radius:14px;padding:15px;margin-bottom:13px;box-shadow:0 2px 9px #0000000d}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:11px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px}
+.stat{background:#fff;border-radius:13px;padding:14px;box-shadow:0 2px 8px #0000000b}
+.stat small{color:#64748b}.stat b{display:block;font-size:20px;margin-top:6px}
+label{display:block;font-weight:700;font-size:13px;margin-bottom:5px}
+input,select,textarea{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:9px;font-size:15px}
+textarea{min-height:70px}
+button{cursor:pointer}
+button:disabled{opacity:.55;cursor:not-allowed}
+.btn{border:0;border-radius:9px;padding:11px 15px;font-weight:700}
+.primary{background:#075985;color:#fff}.success{background:#15803d;color:#fff}.orange{background:#b45309;color:#fff}.gray{background:#64748b;color:#fff}.danger{background:#b91c1c;color:#fff}.smallbtn{padding:7px 9px;font-size:12px}
+.worker{border:2px solid #bae6fd;background:#f0f9ff}
+.worker-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:9px}
+.witem{background:#fff;border:1px solid #cbd5e1;border-radius:9px;padding:10px}
+.witem label{display:flex;gap:8px;align-items:center;margin:0}.witem input{width:auto}
+.alert{padding:11px;border-radius:9px;background:#e0f2fe;color:#075985;margin-bottom:10px}
+.warn{background:#fff7ed;color:#9a3412}
+.table{overflow:auto}table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;border-bottom:1px solid #e2e8f0;text-align:left;white-space:nowrap}th{background:#f8fafc}
+.badge{display:inline-block;padding:4px 8px;border-radius:15px;background:#e0f2fe;color:#075985}
+.modal{display:none;position:fixed;inset:0;background:#0008;z-index:100;align-items:center;justify-content:center;padding:12px}.modal.show{display:flex}
+.modalbox{background:#fff;border-radius:15px;padding:17px;width:100%;max-width:520px;max-height:92vh;overflow:auto}
+.mhead{display:flex;justify-content:space-between;align-items:center}.close{border:0;border-radius:50%;width:32px;height:32px}
+.profile-head{background:#075985;color:#fff;border-radius:12px;padding:15px}
+.txn{padding:10px;border-bottom:1px solid #e2e8f0}
+.money{font-weight:700}
+#bar{position:fixed;top:0;left:0;height:3px;width:0;background:#f59e0b;z-index:300;transition:width .3s}
+#bar.on{width:85%;transition:width 6s cubic-bezier(.1,.7,.2,1)}
+#toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);max-width:92%;background:#0f172a;color:#fff;padding:11px 16px;border-radius:11px;font-size:14px;z-index:400;display:none;box-shadow:0 4px 14px #0004}
+#toast.err{background:#b91c1c}
+#toast.show{display:block}
+@media(max-width:600px){.wrap{padding:8px}.grid{grid-template-columns:1fr}.title{font-size:20px}}
+</style>
+</head>
+<body>
+
+<div id="bar"></div>
+<div id="toast"></div>
+
+<div class="top">
+  <div class="title">🚤 ট্রলার হিসাব</div>
+  <div class="sub">নতুন বিক্রয় • সহযোগী • আড়তদার • পরিশোধ • খরচ • রিপোর্ট</div>
+</div>
+
+<div class="nav">
+<button class="on" onclick="page('dash',this)">🏠 মূল হিসাব</button>
+<button onclick="page('sale',this)">🐟 নতুন বিক্রয়</button>
+<button onclick="page('workers',this)">👷 সহযোগী</button>
+<button onclick="page('buyers',this)">🏪 আড়তদার</button>
+<button onclick="page('payments',this)">💰 পরিশোধ</button>
+<button onclick="page('expense',this)">📉 মালিকের খরচ</button>
+<button onclick="page('report',this)">📊 হিসাব প্রতিবেদন</button>
+<button onclick="page('backup',this)">💾 ব্যাকআপ</button>
+</div>
+
+<div class="wrap">
+
+<section id="dash" class="page on">
+<div id="backupWarn" class="alert warn" style="display:none"></div>
+<div class="stats">
+<div class="stat"><small>মোট নতুন বিক্রয়</small><b id="dsales">৳0</b></div>
+<div class="stat"><small>মালিক ৫০%</small><b id="downer">৳0</b></div>
+<div class="stat"><small>সহযোগীদের অংশ ৫০%</small><b id="dworker">৳0</b></div>
+<div class="stat"><small>যৌথ খরচ</small><b id="dshared">৳0</b></div>
+<div class="stat"><small>মালিকের খরচ</small><b id="dexp">৳0</b></div>
+<div class="stat"><small>মালিক Net</small><b id="dnet">৳0</b></div>
+<div class="stat"><small>সহযোগী মোট পাওনা</small><b id="dwdue">৳0</b></div>
+<div class="stat"><small>আড়তদারের মোট পাওনা</small><b id="dbdue">৳0</b></div>
+</div>
+
+<div class="card">
+<h3>দ্রুত কাজ</h3>
+<div class="grid">
+<button class="btn success" onclick="openSale()">+ নতুন বিক্রয়</button>
+<button class="btn primary" onclick="openWorker()">+ সহযোগী যোগ</button>
+<button class="btn primary" onclick="openBuyer()">+ আড়তদার যোগ</button>
+</div>
+</div>
+
+<div class="card">
+<h3>সাম্প্রতিক বিক্রয়</h3>
+<div class="table"><table><thead><tr><th>তারিখ</th><th>মাছ</th><th>মোট</th><th>অগ্রিম প্রাপ্তি</th><th>পাওনা</th><th>কাজ</th></tr></thead><tbody id="recent"></tbody></table></div>
+</div>
+</section>
+
+<section id="sale" class="page">
+<div class="card">
+<h2>🐟 নতুন বিক্রয়</h2>
+<div class="grid">
+<div><label>তারিখ</label><input type="date" id="sdate"></div>
+<div><label>সময়</label><input type="time" id="stime"></div>
+<div><label>Trip ID</label><input id="strip" placeholder="TRIP-01"></div>
+<div><label>মাছের নাম / দর *</label><div style="display:flex;gap:6px"><select id="sfish" onchange="fishChanged()" style="flex:1"><option value="">-- মাছ নির্বাচন করুন --</option></select><button class="btn primary smallbtn" type="button" onclick="openFish()">+ মাছ</button></div><input type="hidden" id="editSaleId"></div>
+<div><label>ওজন KG *</label><input type="number" inputmode="decimal" id="sweight" step=".01" oninput="calc()"></div>
+<div><label>প্রতি KG দাম *</label><input type="number" inputmode="decimal" id="sprice" step=".01" oninput="calc()"></div>
+</div>
+</div>
+
+<div class="card">
+<h3>🏪 আড়তদার</h3>
+<div class="grid">
+<div><label>আড়তদার</label><select id="sbuyer"></select></div>
+<div style="display:flex;align-items:end"><button class="btn primary" onclick="openBuyer()">+ নতুন আড়তদার</button></div>
+</div>
+</div>
+
+<div class="card">
+<h3>💰 Entry-তে পরিশোধ</h3>
+<div class="grid">
+<div><label>এখন পেয়েছেন</label><input type="number" inputmode="decimal" id="spaid" value="0" step=".01" oninput="calc()"></div>
+<div><label>অবশিষ্ট পাওনা</label><input id="sdue" readonly></div>
+</div>
+<div class="alert" style="margin-top:10px">
+নগদ = পুরো টাকা অগ্রিম প্রাপ্তি, Credit = ০ টাকা পাওয়া, Partial = মাঝামাঝি টাকা পাওয়া।
+</div>
+</div>
+
+<div class="card worker">
+<h3>👷 এই বিক্রয়-এ উপস্থিত সহযোগী</h3>
+<button class="btn primary" onclick="openWorker()">+ নতুন সহযোগী যোগ করুন</button>
+<div id="workersEmpty" class="alert warn" style="display:none;margin-top:10px">কোনো সক্রিয় সহযোগী নেই। আগে সহযোগী যোগ করুন।</div>
+<div id="workerChecks" class="worker-grid" style="margin-top:10px"></div>
+<div id="wcount" class="badge" style="margin-top:10px">0 / 6 জন নির্বাচিত</div>
+</div>
+
+<div class="card">
+<h3>⛽ যৌথ খরচ</h3>
+<div class="grid">
+<div><label>তেল Liters</label><input type="number" inputmode="decimal" id="soil" step=".01"></div>
+<div><label>তেলের খরচ</label><input type="number" inputmode="decimal" id="soilc" value="0" step=".01" oninput="calc()"></div>
+<div><label>খাবার খরচ</label><input type="number" inputmode="decimal" id="sfood" value="0" step=".01" oninput="calc()"></div>
+<div><label>অন্যান্য যৌথ খরচ</label><input type="number" inputmode="decimal" id="sother" value="0" step=".01" oninput="calc()"></div>
+</div>
+</div>
+
+<div class="card">
+<h3>📊 হিসাব</h3>
+<div class="stats">
+<div class="stat"><small>Gross</small><b id="pgross">৳0</b></div>
+<div class="stat"><small>যৌথ খরচ</small><b id="pshared">৳0</b></div>
+<div class="stat"><small>Net</small><b id="pnet">৳0</b></div>
+<div class="stat"><small>মালিকের অংশ</small><b id="powner">৳0</b></div>
+<div class="stat"><small>সহযোগীদের অংশ</small><b id="ppool">৳0</b></div>
+<div class="stat"><small>প্রতি সহযোগী</small><b id="peach">৳0</b></div>
+</div>
+</div>
+
+<div class="card">
+<label>নোট</label><textarea id="snotes"></textarea><br><br>
+<button class="btn success" id="saleSaveBtn" onclick="saveSale()">💾 বিক্রয় সংরক্ষণ</button>
+<button class="btn gray" id="saleCancelEditBtn" style="display:none" onclick="cancelSaleEdit()">✖ সম্পাদনা বাতিল</button>
+</div>
+
+<div class="card">
+<h3>🧾 নতুন বিক্রয়ের এন্ট্রি / ভুল এন্ট্রি ঠিক করুন</h3>
+<div class="table"><table><thead><tr><th>তারিখ</th><th>মাছ</th><th>আড়তদার</th><th>মোট</th><th>পাওয়া</th><th>পাওনা</th><th>কাজ</th></tr></thead><tbody id="salesHistory"></tbody></table></div>
+</div>
+</section>
+
+<section id="workers" class="page">
+<div class="card"><h2>👷 সহযোগী</h2><button class="btn success" onclick="openWorker()">+ সহযোগী যোগ করুন</button></div>
+<div class="card"><div id="workerList"></div></div>
+<div class="card"><h3>সহযোগী হিসাব</h3><div class="table"><table><thead><tr><th>নাম</th><th>কাজ</th><th>মোট আয়</th><th>উত্তোলন</th><th>বর্তমান পাওনা</th><th></th></tr></thead><tbody id="workerSummary"></tbody></table></div></div>
+</section>
+
+<section id="buyers" class="page">
+<div class="card"><h2>🏪 আড়তদার</h2><button class="btn success" onclick="openBuyer()">+ আড়তদার যোগ করুন</button></div>
+<div class="card"><div id="buyerList"></div></div>
+</section>
+
+<section id="payments" class="page">
+<div class="card">
+<h2>💰 আড়তদারের পরে পরিশোধ</h2>
+<input type="hidden" id="paymentId">
+<div class="grid">
+<div><label>তারিখ</label><input type="date" id="pdate"></div>
+<div><label>সময়</label><input type="time" id="ptime"></div>
+<div><label>আড়তদার</label><select id="pbuyer" onchange="showBuyerDue()"></select></div>
+<div><label>বর্তমান পাওনা</label><input id="pbdue" readonly></div>
+<div><label>পরিশোধ Amount</label><input type="number" inputmode="decimal" id="pamount" step=".01"></div>
+<div><label>পরিশোধের মাধ্যম</label><select id="pmethod"><option>Cash</option><option>bKash</option><option>Bank</option></select></div>
+</div>
+<br><label>নোট</label><textarea id="pnotes"></textarea><br><br>
+<button class="btn success" id="paySaveBtn" onclick="savePayment()">💾 পরিশোধ সংরক্ষণ</button>
+<button class="btn gray" id="payCancelBtn" style="display:none" onclick="resetPayment()">✖ সম্পাদনা বাতিল</button>
+</div>
+<div class="card"><h3>একই আড়তদারের সম্পূর্ণ হিসাব</h3><div id="buyerProfile"></div></div>
+</section>
+
+<section id="expense" class="page">
+<div class="card">
+<h2>📉 মালিকের খরচ</h2>
+<div class="alert">Net/ট্রলার/ইঞ্জিন/মেশিন/রিপেয়ার ইত্যাদি শুধু মালিকের ৫০% থেকে বাদ হবে। সহযোগীর আয় কমবে না।</div>
+<div class="grid">
+<div><label>তারিখ</label><input type="date" id="edate"></div>
+<div><label>সময়</label><input type="time" id="etime"></div>
+<div><label>ধরন</label><select id="ecat"><option>Net</option><option>Trawler</option><option>Engine</option><option>Repair</option><option>Machine</option><option>Other</option></select></div>
+<div><label>Amount</label><input type="number" inputmode="decimal" id="eamount" step=".01"></div>
+</div>
+<br><label>বিবরণ</label><input id="edesc"><br><br>
+<button class="btn success" id="expSaveBtn" onclick="saveExpense()">💾 সংরক্ষণ</button>
+<button class="btn gray" id="expCancelBtn" style="display:none" onclick="resetExpense()">✖ সম্পাদনা বাতিল</button>
+</div>
+<div class="card"><h3>মালিকের খরচ Entry</h3><div class="table"><table><thead><tr><th>তারিখ</th><th>ধরন</th><th>বিবরণ</th><th>Amount</th><th>কাজ</th></tr></thead><tbody id="expenseList"></tbody></table></div></div>
+</section>
+
+<section id="report" class="page">
+<div class="card">
+<h2>📊 তারিখ অনুযায়ী হিসাব প্রতিবেদন</h2>
+<div class="grid">
+<div><label>শুরুর তারিখ</label><input type="date" id="rfrom"></div>
+<div><label>শেষ তারিখ</label><input type="date" id="rto"></div>
+</div><br>
+<button class="btn primary" onclick="runDateReport()">🔎 প্রতিবেদন দেখুন</button>
+<button class="btn gray" onclick="clearDateReport()">সব তারিখ</button>
+<div id="dateReportBox" style="margin-top:12px"></div>
+</div>
+<div class="card"><h2>📊 বর্তমান হিসাব</h2><button class="btn primary" onclick="load()">হালনাগাদ</button></div>
+<div class="card"><h3>আড়তদার</h3><div class="table"><table><thead><tr><th>আড়তদার</th><th>বিক্রয়</th><th>অগ্রিম প্রাপ্তি</th><th>পরবর্তী পরিশোধ</th><th>মোট প্রাপ্তি</th><th>পাওনা</th></tr></thead><tbody id="reportBuyer"></tbody></table></div></div>
+<div class="card"><h3>সহযোগী</h3><div class="table"><table><thead><tr><th>সহযোগী</th><th>কাজ</th><th>আয়</th><th>উত্তোলন</th><th>পাওনা</th></tr></thead><tbody id="reportWorker"></tbody></table></div></div>
+</section>
+
+<section id="backup" class="page">
+<div class="card">
+<h2>💾 ব্যাকআপ ও রিস্টোর</h2>
+<div class="alert warn">আপনার সব হিসাব এই ফোনেই জমা থাকে। ফোন হারালে বা ব্রাউজারের ডাটা মুছলে হিসাব চলে যাবে — তাই <b>সপ্তাহে অন্তত একবার</b> ব্যাকআপ নিন এবং WhatsApp / Google Drive-এ পাঠিয়ে রাখুন।</div>
+<div id="backupInfo" class="alert"></div>
+<div class="grid">
+<button class="btn success" onclick="shareBackup()">📤 ব্যাকআপ পাঠান (WhatsApp/Drive)</button>
+<button class="btn primary" onclick="downloadBackup()">⬇️ ব্যাকআপ ডাউনলোড</button>
+</div>
+</div>
+<div class="card">
+<h3>♻️ রিস্টোর (ব্যাকআপ ফাইল থেকে ডাটা ফেরত আনুন)</h3>
+<div class="alert warn">সতর্কতা: রিস্টোর করলে এই ফোনের বর্তমান সব ডাটা ব্যাকআপ ফাইলের ডাটা দিয়ে <b>বদলে যাবে</b>।</div>
+<input type="file" id="restoreFile" accept=".json,.txt,application/json,text/plain" onchange="restoreFile(this)">
+</div>
+<div class="card">
+<h3>📲 অ্যাপ ইনস্টল</h3>
+<div class="alert" id="installInfo">Chrome-এর ⋮ মেনু → "Add to Home screen" / "Install app" চাপুন।</div>
+<button class="btn primary" id="installBtn" style="display:none" onclick="installApp()">📲 অ্যাপ ইনস্টল করুন</button>
+<div id="storageInfo" style="margin-top:10px;font-size:13px;color:#64748b"></div>
+</div>
+</section>
+
+</div>
+
+<div class="modal" id="workerModal"><div class="modalbox">
+<div class="mhead"><h2>👷 সহযোগী যোগ করুন</h2><button class="close" onclick="closeM('workerModal')">×</button></div>
+<div class="grid">
+<div><label>নাম *</label><input id="wname"></div>
+<div><label>মোবাইল</label><input id="wphone" type="tel"></div>
+</div><br><label>ঠিকানা</label><textarea id="waddress"></textarea><br><br>
+<button class="btn success" onclick="saveWorker()">💾 সংরক্ষণ</button>
+</div></div>
+
+<div class="modal" id="withdrawModal"><div class="modalbox">
+<div class="mhead"><h2>💵 সহযোগীর উত্তোলন</h2><button class="close" onclick="closeM('withdrawModal')">×</button></div>
+<div class="profile-head"><div>সহযোগী: <b id="wdname"></b></div><div>উত্তোলনযোগ্য পাওনা: <b id="wddue"></b></div></div><br>
+<input type="hidden" id="wdid"><input type="hidden" id="wdentryid">
+<div class="grid">
+<div><label>তারিখ</label><input type="date" id="wddate"></div>
+<div><label>সময়</label><input type="time" id="wdtime"></div>
+<div><label>উত্তোলনের পরিমাণ</label><input type="number" inputmode="decimal" id="wdamount" step=".01"></div>
+<div><label>পরিশোধ Type</label><select id="wdmethod"><option>Cash</option><option>bKash</option><option>Bank</option></select></div>
+</div><br><label>নোট</label><textarea id="wdnotes"></textarea><br><br>
+<button class="btn success" onclick="saveWithdrawal()">💵 উত্তোলন</button>
+</div></div>
+
+<div class="modal" id="fishModal"><div class="modalbox">
+<div class="mhead"><h2>🐟 মাছ ও দর</h2><button class="close" onclick="closeM('fishModal')">×</button></div>
+<input type="hidden" id="fishId">
+<label>মাছের নাম *</label><input id="fishName"><br><br>
+<label>ডিফল্ট দর / KG</label><input type="number" inputmode="decimal" id="fishPrice" step=".01"><br><br>
+<button class="btn success" onclick="saveFishMaster()">💾 সংরক্ষণ</button>
+<button class="btn gray" onclick="closeM('fishModal')">বন্ধ</button>
+<div id="fishList" style="margin-top:15px"></div>
+</div></div>
+
+<div class="modal" id="buyerModal"><div class="modalbox">
+<div class="mhead"><h2>🏪 আড়তদার যোগ করুন</h2><button class="close" onclick="closeM('buyerModal')">×</button></div>
+<label>নাম *</label><input id="bname"><br><br>
+<label>মোবাইল</label><input id="bphone" type="tel"><br><br>
+<label>ঠিকানা</label><textarea id="baddress"></textarea><br><br>
+<button class="btn success" onclick="saveBuyer()">💾 সংরক্ষণ</button>
+</div></div>
+
+<script>
+const Server = (function () {
+'use strict';
+const V2 = { MAX_WORKERS: 6, RECENT: 100 };
+
+/* কলাম সংখ্যা (Google Sheets সংস্করণের সাথে হুবহু এক) */
+const SCHEMA = {
+  V2_Workers: 7, V2_Wholesalers: 5, V2_Fish: 5, V2_Sales: 27,
+  V2_WholesalerPayments: 9, V2_WorkerEarnings: 9, V2_WorkerWithdrawals: 9, V2_OwnerExpenses: 8
+};
+
+let DB = {};           // সব টেবিল মেমোরিতে (দ্রুত), প্রতিটি লেখার পর ফোনের IndexedDB-তে সেভ হয়
+let STORE = null;
+let META = { lastBackup: '' };
+let dirty = new Set();
+
+function emptyDB_() { const d = {}; Object.keys(SCHEMA).forEach(k => d[k] = []); return d; }
+function pad2_(n) { return String(n).padStart(2, '0'); }
+function nowIso_() { return new Date().toISOString(); }
+function todayStr_() { const d = new Date(); return d.getFullYear() + '-' + pad2_(d.getMonth() + 1) + '-' + pad2_(d.getDate()); }
+function fmtDate_(v) { return v ? String(v) : ''; }
+function fmtTime_(v) { return v ? String(v) : ''; }
+function id_(prefix) {
+  const u = (self.crypto && crypto.randomUUID) ? crypto.randomUUID() : (Math.random().toString(16).slice(2) + Date.now().toString(16));
+  return prefix + '-' + u.replace(/-/g, '').slice(0, 8).toUpperCase();
+}
+function num_(v) { const n = Number(v); return isFinite(n) ? n : 0; }
+function txt_(v) { return String(v == null ? '' : v).trim(); }
+
+function rows_(name) { return DB[name]; }
+function append_(name, newRows) { newRows.forEach(r => DB[name].push(r.slice())); if (newRows.length) dirty.add(name); }
+function setRow_(name, idx, row) { DB[name][idx] = row.slice(); dirty.add(name); }
+function delRow_(name, idx) { DB[name].splice(idx, 1); dirty.add(name); }
+function deleteWhere_(name, pred) {
+  const keep = DB[name].filter(r => !pred(r));
+  if (keep.length !== DB[name].length) { DB[name] = keep; dirty.add(name); }
+}
+function findIdx_(name, id) { const key = String(id); return DB[name].findIndex(r => String(r[0]) === key); }
+function recent_(arr, n) {
+  return arr
+    .map((x, i) => ({ x: x, i: i, k: (x.date || '') + (x.time || '') }))
+    .sort((a, b) => (a.k < b.k ? 1 : a.k > b.k ? -1 : b.i - a.i))
+    .slice(0, n)
+    .map(o => o.x);
+}
+
+/* =========================
+   READERS
+========================= */
+
+function getWorkers_() {
+  return rows_('V2_Workers').filter(r => r[0]).map(r => ({
+    id: String(r[0]),
+    name: String(r[1] || ''),
+    phone: String(r[2] || ''),
+    address: String(r[3] || ''),
+    joinDate: fmtDate_(r[4]),
+    status: String(r[5] || 'Active')
+  }));
+}
+
+function getWholesalers_() {
+  return rows_('V2_Wholesalers').filter(r => r[0]).map(r => ({
+    id: String(r[0]),
+    name: String(r[1] || ''),
+    phone: String(r[2] || ''),
+    address: String(r[3] || '')
+  }));
+}
+
+function getFish_() {
+  return rows_('V2_Fish').filter(r => r[0]).map(r => ({
+    id: String(r[0]),
+    name: String(r[1] || ''),
+    price: num_(r[2]),
+    status: String(r[3] || 'Active')
+  }));
+}
+
+function getSales_() {
+  return rows_('V2_Sales').filter(r => r[0]).map(r => ({
+    id: String(r[0]),
+    date: fmtDate_(r[1]),
+    time: fmtTime_(r[2]),
+    tripId: String(r[3] || ''),
+    fishName: String(r[4] || ''),
+    weight: num_(r[5]),
+    price: num_(r[6]),
+    gross: num_(r[7]),
+    wholesalerId: String(r[8] || ''),
+    wholesalerName: String(r[9] || ''),
+    paymentStatus: String(r[10] || ''),
+    entryPaid: num_(r[11]),
+    entryDue: num_(r[12]),
+    oilLiters: num_(r[13]),
+    oilCost: num_(r[14]),
+    foodCost: num_(r[15]),
+    otherSharedCost: num_(r[16]),
+    sharedCost: num_(r[17]),
+    net: num_(r[18]),
+    ownerShare: num_(r[19]),
+    workerPool: num_(r[20]),
+    workerIds: String(r[21] || '').split(',').filter(Boolean),
+    workerNames: String(r[22] || ''),
+    workerCount: num_(r[23]),
+    workerEach: num_(r[24]),
+    notes: String(r[25] || '')
+  }));
+}
+
+function getWholesalerPayments_() {
+  return rows_('V2_WholesalerPayments').filter(r => r[0]).map(r => ({
+    id: String(r[0]),
+    date: fmtDate_(r[1]),
+    time: fmtTime_(r[2]),
+    wholesalerId: String(r[3]),
+    wholesalerName: String(r[4]),
+    amount: num_(r[5]),
+    method: String(r[6] || ''),
+    notes: String(r[7] || '')
+  }));
+}
+
+function getWorkerEarnings_() {
+  return rows_('V2_WorkerEarnings').filter(r => r[0]).map(r => ({
+    id: String(r[0]),
+    date: fmtDate_(r[1]),
+    time: fmtTime_(r[2]),
+    saleId: String(r[3]),
+    tripId: String(r[4] || ''),
+    workerId: String(r[5]),
+    workerName: String(r[6] || ''),
+    earning: num_(r[7])
+  }));
+}
+
+function getWorkerWithdrawals_() {
+  return rows_('V2_WorkerWithdrawals').filter(r => r[0]).map(r => ({
+    id: String(r[0]),
+    date: fmtDate_(r[1]),
+    time: fmtTime_(r[2]),
+    workerId: String(r[3]),
+    workerName: String(r[4] || ''),
+    amount: num_(r[5]),
+    method: String(r[6] || ''),
+    notes: String(r[7] || '')
+  }));
+}
+
+function getOwnerExpenses_() {
+  return rows_('V2_OwnerExpenses').filter(r => r[0]).map(r => ({
+    id: String(r[0]),
+    date: fmtDate_(r[1]),
+    time: fmtTime_(r[2]),
+    category: String(r[3] || ''),
+    description: String(r[4] || ''),
+    amount: num_(r[5]),
+    notes: String(r[6] || '')
+  }));
+}
+
+/* =========================
+   BALANCES (এক পাসে হিসাব)
+========================= */
+
+function buyerTotals_(sales, payments) {
+  const m = {};
+  const g = id => m[id] || (m[id] = { gross: 0, entryPaid: 0, laterPaid: 0 });
+  sales.forEach(s => { const x = g(s.wholesalerId); x.gross += s.gross; x.entryPaid += s.entryPaid; });
+  payments.forEach(p => { g(p.wholesalerId).laterPaid += p.amount; });
+  return m;
+}
+
+function balanceOf_(t) {
+  t = t || { gross: 0, entryPaid: 0, laterPaid: 0 };
+  return {
+    gross: t.gross,
+    entryPaid: t.entryPaid,
+    laterPaid: t.laterPaid,
+    totalPaid: t.entryPaid + t.laterPaid,
+    due: Math.max(0, t.gross - t.entryPaid - t.laterPaid)
+  };
+}
+
+function wholesalerBalance_(id) {
+  return balanceOf_(buyerTotals_(getSales_(), getWholesalerPayments_())[String(id)]);
+}
+
+function workerTotals_(earnings, withdrawals) {
+  const m = {};
+  const g = id => m[id] || (m[id] = { earnings: 0, withdrawals: 0, events: 0 });
+  earnings.forEach(e => { const x = g(e.workerId); x.earnings += e.earning; x.events++; });
+  withdrawals.forEach(w => { g(w.workerId).withdrawals += w.amount; });
+  return m;
+}
+
+function workerBalanceOf_(t) {
+  t = t || { earnings: 0, withdrawals: 0, events: 0 };
+  return {
+    earnings: t.earnings,
+    withdrawals: t.withdrawals,
+    events: t.events,
+    due: Math.max(0, t.earnings - t.withdrawals)
+  };
+}
+
+function workerBalance_(id) {
+  return workerBalanceOf_(workerTotals_(getWorkerEarnings_(), getWorkerWithdrawals_())[String(id)]);
+}
+
+/* আড়তদারের পরের পরিশোধ যেন (মোট বিক্রয় - Entry) এর বেশি না হয় */
+function assertBuyerOk_(buyerId, salesArr, msg) {
+  const t = buyerTotals_(salesArr, getWholesalerPayments_())[String(buyerId)];
+  if (t && t.laterPaid > t.gross - t.entryPaid + 0.01) throw new Error(msg);
+}
+
+/* =========================
+   WORKERS
+========================= */
+
+function saveWorker(data) {
+  const name = String(data && data.name || '').trim();
+  if (!name) throw new Error('সহযোগীর নাম দিন।');
+
+  const workers = getWorkers_();
+  const active = workers.filter(w => w.status === 'Active').length;
+  if (active >= V2.MAX_WORKERS) throw new Error('সর্বোচ্চ ৬ জন সক্রিয় সহযোগী রাখা যাবে।');
+
+  if (workers.some(w => w.status === 'Active' && w.name.toLowerCase() === name.toLowerCase())) {
+    throw new Error('এই নামে সক্রিয় সহযোগী আগে থেকেই আছে।');
+  }
+
+  append_('V2_Workers', [[
+    id_('W'), txt_(name), txt_(data.phone), txt_(data.address),
+    data.joinDate || todayStr_(), 'Active', nowIso_()
+  ]]);
+
+  return { success: true, message: 'সহযোগী যোগ হয়েছে।' };
+}
+
+function toggleWorker(workerId) {
+  const idx = findIdx_('V2_Workers', workerId);
+  if (idx < 0) throw new Error('সহযোগী পাওয়া যায়নি।');
+
+  const rows = rows_('V2_Workers');
+  const oldStatus = String(rows[idx][5] || 'Active');
+
+  if (oldStatus === 'Inactive') {
+    const active = rows.filter(r => r[0] && String(r[5] || 'Active') === 'Active').length;
+    if (active >= V2.MAX_WORKERS) throw new Error('৬ জন সক্রিয় সহযোগী ইতিমধ্যে আছে।');
+  }
+
+  const newStatus = oldStatus === 'Active' ? 'Inactive' : 'Active';
+  const upd = rows[idx].slice(); upd[5] = newStatus;
+  setRow_('V2_Workers', idx, upd);
+  return { success: true, status: newStatus };
+}
+
+/* =========================
+   WHOLESALERS
+========================= */
+
+function saveWholesaler(data) {
+  const name = String(data && data.name || '').trim();
+  if (!name) throw new Error('আড়তদারের নাম দিন।');
+
+  if (getWholesalers_().some(w => w.name.toLowerCase() === name.toLowerCase())) {
+    throw new Error('এই নামে আড়তদার আগে থেকেই আছে।');
+  }
+
+  append_('V2_Wholesalers', [[id_('A'), txt_(name), txt_(data.phone), txt_(data.address), nowIso_()]]);
+  return { success: true, message: 'আড়তদার যোগ হয়েছে।' };
+}
+
+/* =========================
+   FISH MASTER
+========================= */
+
+function saveFish(data) {
+  const name = String(data && data.name || '').trim();
+  const price = num_(data && data.price);
+  if (!name) throw new Error('মাছের নাম দিন।');
+  if (price < 0) throw new Error('মাছের দর সঠিকভাবে দিন।');
+
+  if (getFish_().some(f => f.status === 'Active' && f.name.toLowerCase() === name.toLowerCase())) {
+    throw new Error('এই মাছের নাম আগে থেকেই আছে।');
+  }
+
+  append_('V2_Fish', [[id_('F'), txt_(name), price, 'Active', nowIso_()]]);
+  return { success: true, message: 'মাছ ও দর সংরক্ষণ হয়েছে।' };
+}
+
+function updateFish(data) {
+  const id = String(data && data.id || '');
+  const name = String(data && data.name || '').trim();
+  const price = num_(data && data.price);
+  if (!id) throw new Error('মাছ ID পাওয়া যায়নি।');
+  if (!name) throw new Error('মাছের নাম দিন।');
+  if (price < 0) throw new Error('মাছের দর সঠিকভাবে দিন।');
+
+  const idx = findIdx_('V2_Fish', id);
+  if (idx < 0) throw new Error('মাছ পাওয়া যায়নি।');
+
+  if (getFish_().some(f => f.id !== id && f.status === 'Active' && f.name.toLowerCase() === name.toLowerCase())) {
+    throw new Error('এই মাছের নাম আগে থেকেই আছে।');
+  }
+
+  const old = rows_('V2_Fish')[idx];
+  setRow_('V2_Fish', idx, [id, txt_(name), price, old[3] || 'Active', old[4] || nowIso_()]);
+  return { success: true, message: 'মাছের নাম/দর সম্পাদনা হয়েছে।' };
+}
+
+function deleteFish(fishId) {
+  const idx = findIdx_('V2_Fish', fishId);
+  if (idx < 0) throw new Error('মাছ পাওয়া যায়নি।');
+  delRow_('V2_Fish', idx);
+  return { success: true, message: 'মাছের তালিকা থেকে মুছে দেওয়া হয়েছে।' };
+}
+
+/* =========================
+   SALES
+========================= */
+
+/* একটাই যাচাই + হিসাব — saveSale ও updateSale দুটোই এটা ব্যবহার করে */
+function validateSaleData_(data, allowInactiveIds) {
+  if (!data || !data.date) throw new Error('তারিখ দিন।');
+  const fishName = String(data.fishName || '').trim();
+  if (!fishName) throw new Error('মাছের নাম দিন।');
+
+  const weight = num_(data.weight);
+  const price = num_(data.price);
+  if (weight <= 0 || price <= 0) throw new Error('ওজন এবং প্রতি KG দাম সঠিকভাবে দিন।');
+
+  const gross = weight * price;
+  const oilCost = num_(data.oilCost);
+  const foodCost = num_(data.foodCost);
+  const otherSharedCost = num_(data.otherSharedCost);
+  if (oilCost < 0 || foodCost < 0 || otherSharedCost < 0) throw new Error('খরচ ঋণাত্মক হতে পারবে না।');
+
+  const sharedCost = oilCost + foodCost + otherSharedCost;
+  if (sharedCost > gross) throw new Error('যৌথ খরচ মোট বিক্রির টাকার চেয়ে বেশি হতে পারবে না।');
+
+  const net = gross - sharedCost;
+
+  const workerIds = Array.isArray(data.workerIds)
+    ? [...new Set(data.workerIds.map(String).filter(Boolean))]
+    : [];
+  if (workerIds.length > V2.MAX_WORKERS) throw new Error('একটি বিক্রয়-এ সর্বোচ্চ ৬ জন সহযোগী নির্বাচন করা যাবে।');
+
+  const workerMap = {};
+  getWorkers_().forEach(w => workerMap[w.id] = w);
+  const okInactive = allowInactiveIds || [];
+  workerIds.forEach(id => {
+    const w = workerMap[id];
+    if (!w) throw new Error('নির্বাচিত সহযোগী পাওয়া যায়নি।');
+    if (w.status !== 'Active' && okInactive.indexOf(id) < 0) {
+      throw new Error(w.name + ' নিষ্ক্রিয় — তাকে নতুন বিক্রয়-এ যোগ করা যাবে না।');
+    }
+  });
+
+  const buyer = getWholesalers_().find(w => w.id === String(data.wholesalerId || ''));
+  if (!buyer) throw new Error('আড়তদার নির্বাচন করুন।');
+
+  const entryPaid = num_(data.entryPaid);
+  if (entryPaid < 0 || entryPaid > gross) throw new Error('Entry-তে পাওয়া টাকা ০ থেকে মোট বিক্রয়-এর মধ্যে হতে হবে।');
+
+  return {
+    fishName: fishName,
+    weight: weight, price: price, gross: gross,
+    oilCost: oilCost, foodCost: foodCost, otherSharedCost: otherSharedCost,
+    sharedCost: sharedCost, net: net,
+    ownerShare: net / 2, workerPool: net / 2,
+    workerIds: workerIds, workerMap: workerMap,
+    workerNames: workerIds.map(id => workerMap[id].name).join(', '),
+    workerCount: workerIds.length,
+    workerEach: workerIds.length ? (net / 2) / workerIds.length : 0,
+    buyer: buyer,
+    entryPaid: entryPaid,
+    entryDue: Math.max(0, gross - entryPaid),
+    paymentStatus: entryPaid === 0 ? 'Credit' : (entryPaid >= gross ? 'Cash' : 'Partial')
+  };
+}
+
+function saleRow_(saleId, data, c, createdAt) {
+  return [
+    saleId, data.date, data.time || '', txt_(data.tripId), txt_(c.fishName),
+    c.weight, c.price, c.gross, c.buyer.id, c.buyer.name,
+    c.paymentStatus, c.entryPaid, c.entryDue, num_(data.oilLiters),
+    c.oilCost, c.foodCost, c.otherSharedCost, c.sharedCost, c.net,
+    c.ownerShare, c.workerPool, c.workerIds.join(','), c.workerNames,
+    c.workerCount, c.workerEach, txt_(data.notes), createdAt
+  ];
+}
+
+function earningRows_(saleId, data, c) {
+  if (!c.workerCount || !c.workerEach) return [];
+  const now = nowIso_();
+  return c.workerIds.map(wid => [
+    id_('E'), data.date, data.time || '', saleId, txt_(data.tripId), wid,
+    c.workerMap[wid].name, c.workerEach, now
+  ]);
+}
+
+function saveSale(data) {
+  const c = validateSaleData_(data);
+  const saleId = id_('S');
+
+  append_('V2_Sales', [saleRow_(saleId, data, c, nowIso_())]);
+  append_('V2_WorkerEarnings', earningRows_(saleId, data, c));
+
+  return {
+    success: true,
+    message: 'মাছ বিক্রির হিসাব সংরক্ষণ হয়েছে।',
+    saleId: saleId,
+    gross: c.gross, entryPaid: c.entryPaid, entryDue: c.entryDue,
+    sharedCost: c.sharedCost, net: c.net, ownerShare: c.ownerShare,
+    workerPool: c.workerPool, workerEach: c.workerEach
+  };
+}
+
+function updateSale(data) {
+  const saleId = String(data && data.saleId || '');
+  if (!saleId) throw new Error('বিক্রয় ID পাওয়া যায়নি।');
+
+  const idx = findIdx_('V2_Sales', saleId);
+  if (idx < 0) throw new Error('বিক্রয় পাওয়া যায়নি।');
+  const old = rows_('V2_Sales')[idx];
+
+  // এই বিক্রয়ে আগে থেকে থাকা সহযোগী নিষ্ক্রিয় হলেও edit-এ বাদ পড়বে না
+  const oldWorkerIds = String(old[21] || '').split(',').filter(Boolean);
+  const c = validateSaleData_(data, oldWorkerIds);
+
+  // edit করলে আড়তদারের (পুরোনো ও নতুন) পরের পরিশোধ যেন বেশি না হয়ে যায়
+  const hyp = getSales_().filter(s => s.id !== saleId).concat([{
+    id: saleId, wholesalerId: c.buyer.id, gross: c.gross, entryPaid: c.entryPaid
+  }]);
+  const msg = 'এই বিক্রয় edit করলে আড়তদারের পরের পরিশোধ মোট বিক্রয়-এর চেয়ে বেশি হয়ে যাবে। আগে পরিশোধ entry ঠিক করুন।';
+  assertBuyerOk_(c.buyer.id, hyp, msg);
+  const oldBuyerId = String(old[8] || '');
+  if (oldBuyerId && oldBuyerId !== c.buyer.id) assertBuyerOk_(oldBuyerId, hyp, msg);
+
+  setRow_('V2_Sales', idx, saleRow_(saleId, data, c, old[26] || nowIso_()));
+  deleteWhere_('V2_WorkerEarnings', r => String(r[3]) === saleId);
+  append_('V2_WorkerEarnings', earningRows_(saleId, data, c));
+
+  return { success: true, message: 'বিক্রয় সম্পাদনা করে সংরক্ষণ হয়েছে।', saleId: saleId };
+}
+
+function deleteSale(saleId) {
+  saleId = String(saleId || '');
+  if (!saleId) throw new Error('বিক্রয় ID পাওয়া যায়নি।');
+
+  const idx = findIdx_('V2_Sales', saleId);
+  if (idx < 0) throw new Error('বিক্রয় পাওয়া যায়নি।');
+
+  const buyerId = String(rows_('V2_Sales')[idx][8] || '');
+  const remaining = getSales_().filter(s => s.id !== saleId);
+  assertBuyerOk_(buyerId, remaining,
+    'এই বিক্রয় মুছে ফেললে আড়তদারের পরিশোধ বেশি হয়ে যাবে। আগে ওই আড়তদারের পরের পরিশোধ entry মুছে/ঠিক করুন।');
+
+  deleteWhere_('V2_WorkerEarnings', r => String(r[3]) === saleId);
+  delRow_('V2_Sales', findIdx_('V2_Sales', saleId));
+  return { success: true, message: 'বিক্রয় মুছে দেওয়া হয়েছে এবং সহযোগীর ওই বিক্রয়-এর আয়ও বাতিল হয়েছে।' };
+}
+
+/* =========================
+   WHOLESALER PAYMENTS
+========================= */
+
+function saveWholesalerPayment(data) {
+  if (!data || !data.wholesalerId) throw new Error('আড়তদার নির্বাচন করুন।');
+
+  const amount = num_(data.amount);
+  if (amount <= 0) throw new Error('পরিশোধ amount দিন।');
+
+  const buyer = getWholesalers_().find(w => w.id === String(data.wholesalerId));
+  if (!buyer) throw new Error('আড়তদার পাওয়া যায়নি।');
+
+  const balance = wholesalerBalance_(buyer.id);
+  if (amount > balance.due + 0.01) {
+    throw new Error('এই আড়তদারের বর্তমান পাওনা ' + balance.due.toFixed(2) + ' টাকা। এর বেশি পরিশোধ নেওয়া যাবে না।');
+  }
+
+  append_('V2_WholesalerPayments', [[
+    id_('P'), data.date || todayStr_(), data.time || '', buyer.id, buyer.name,
+    amount, txt_(data.method) || 'Cash', txt_(data.notes), nowIso_()
+  ]]);
+
+  return { success: true, message: 'পরিশোধ সংরক্ষণ হয়েছে।', due: wholesalerBalance_(buyer.id).due };
+}
+
+function updateWholesalerPayment(data) {
+  const id = String(data && data.paymentId || '');
+  const amount = num_(data && data.amount);
+  if (!id) throw new Error('পরিশোধ ID পাওয়া যায়নি।');
+  if (amount <= 0) throw new Error('পরিশোধ amount দিন।');
+
+  const buyer = getWholesalers_().find(w => w.id === String(data.wholesalerId));
+  if (!buyer) throw new Error('আড়তদার পাওয়া যায়নি।');
+
+  const idx = findIdx_('V2_WholesalerPayments', id);
+  if (idx < 0) throw new Error('পরিশোধ পাওয়া যায়নি।');
+  const old = rows_('V2_WholesalerPayments')[idx];
+
+  // আড়তদার বদলালে পুরোনো পরিশোধ নতুন আড়তদারের হিসাবে ধরা যাবে না
+  const sameBuyer = String(old[3]) === buyer.id;
+  const allowed = wholesalerBalance_(buyer.id).due + (sameBuyer ? num_(old[5]) : 0);
+  if (amount > allowed + 0.01) throw new Error('এই পরিশোধ দিলে পাওনা-এর চেয়ে বেশি হয়ে যাবে।');
+
+  setRow_('V2_WholesalerPayments', idx, [
+    id, data.date || todayStr_(), data.time || '', buyer.id, buyer.name, amount,
+    txt_(data.method) || 'Cash', txt_(data.notes), old[8] || nowIso_()
+  ]);
+  return { success: true, message: 'পরিশোধ সম্পাদনা করে সংরক্ষণ হয়েছে।', due: wholesalerBalance_(buyer.id).due };
+}
+
+function deleteWholesalerPayment(id) {
+  const idx = findIdx_('V2_WholesalerPayments', id);
+  if (idx < 0) throw new Error('পরিশোধ পাওয়া যায়নি।');
+  delRow_('V2_WholesalerPayments', idx);
+  return { success: true, message: 'পরিশোধ মুছে দেওয়া হয়েছে।' };
+}
+
+/* =========================
+   WORKER WITHDRAWALS
+========================= */
+
+function saveWorkerWithdrawal(data) {
+  if (!data || !data.workerId) throw new Error('সহযোগী নির্বাচন করুন।');
+
+  const amount = num_(data.amount);
+  if (amount <= 0) throw new Error('কত টাকা উঠাচ্ছে তা দিন।');
+
+  const worker = getWorkers_().find(w => w.id === String(data.workerId));
+  if (!worker) throw new Error('সহযোগী পাওয়া যায়নি।');
+
+  const balance = workerBalance_(worker.id);
+  if (amount > balance.due + 0.01) {
+    throw new Error('এই সহযোগীর বর্তমান পাওনা ' + balance.due.toFixed(2) + ' টাকা। এর বেশি উঠানো যাবে না।');
+  }
+
+  append_('V2_WorkerWithdrawals', [[
+    id_('WD'), data.date || todayStr_(), data.time || '', worker.id, worker.name,
+    amount, txt_(data.method) || 'Cash', txt_(data.notes), nowIso_()
+  ]]);
+
+  return { success: true, message: 'সহযোগীর টাকা উঠানোর হিসাব সংরক্ষণ হয়েছে।', due: workerBalance_(worker.id).due };
+}
+
+function updateWorkerWithdrawal(data) {
+  const id = String(data && data.withdrawalId || '');
+  const amount = num_(data && data.amount);
+  if (!id) throw new Error('Withdrawal ID পাওয়া যায়নি।');
+  if (amount <= 0) throw new Error('কত টাকা উঠানো হয়েছে দিন।');
+
+  const worker = getWorkers_().find(w => w.id === String(data.workerId));
+  if (!worker) throw new Error('সহযোগী পাওয়া যায়নি।');
+
+  const idx = findIdx_('V2_WorkerWithdrawals', id);
+  if (idx < 0) throw new Error('Withdrawal পাওয়া যায়নি।');
+  const old = rows_('V2_WorkerWithdrawals')[idx];
+
+  const sameWorker = String(old[3]) === worker.id;
+  const allowed = workerBalance_(worker.id).due + (sameWorker ? num_(old[5]) : 0);
+  if (amount > allowed + 0.01) throw new Error('এই টাকা উঠালে সহযোগীর পাওনার চেয়ে বেশি হয়ে যাবে।');
+
+  setRow_('V2_WorkerWithdrawals', idx, [
+    id, data.date || todayStr_(), data.time || '', worker.id, worker.name, amount,
+    txt_(data.method) || 'Cash', txt_(data.notes), old[8] || nowIso_()
+  ]);
+  return { success: true, message: 'সহযোগীর টাকা উঠানোর entry সম্পাদনা হয়েছে।', due: workerBalance_(worker.id).due };
+}
+
+function deleteWorkerWithdrawal(id) {
+  const idx = findIdx_('V2_WorkerWithdrawals', id);
+  if (idx < 0) throw new Error('Withdrawal পাওয়া যায়নি।');
+  delRow_('V2_WorkerWithdrawals', idx);
+  return { success: true, message: 'সহযোগীর টাকা উঠানোর entry মুছে দেওয়া হয়েছে।' };
+}
+
+/* =========================
+   OWNER EXPENSES
+========================= */
+
+function saveOwnerExpense(data) {
+  const amount = num_(data && data.amount);
+  if (amount <= 0) throw new Error('খরচের পরিমাণ দিন।');
+
+  append_('V2_OwnerExpenses', [[
+    id_('OE'), data.date || todayStr_(), data.time || '',
+    txt_(data.category) || 'Other', txt_(data.description), amount, txt_(data.notes), nowIso_()
+  ]]);
+  return { success: true, message: 'মালিকের খরচ সংরক্ষণ হয়েছে।' };
+}
+
+function updateOwnerExpense(data) {
+  const id = String(data && data.expenseId || '');
+  const amount = num_(data && data.amount);
+  if (!id) throw new Error('Expense ID পাওয়া যায়নি।');
+  if (amount <= 0) throw new Error('খরচের পরিমাণ দিন।');
+
+  const idx = findIdx_('V2_OwnerExpenses', id);
+  if (idx < 0) throw new Error('Expense পাওয়া যায়নি।');
+  const old = rows_('V2_OwnerExpenses')[idx];
+
+  setRow_('V2_OwnerExpenses', idx, [
+    id, data.date || todayStr_(), data.time || '', txt_(data.category) || 'Other',
+    txt_(data.description), amount, txt_(data.notes) || old[6] || '', old[7] || nowIso_()
+  ]);
+  return { success: true, message: 'মালিকের খরচ সম্পাদনা হয়েছে।' };
+}
+
+function deleteOwnerExpense(id) {
+  const idx = findIdx_('V2_OwnerExpenses', id);
+  if (idx < 0) throw new Error('Expense পাওয়া যায়নি।');
+  delRow_('V2_OwnerExpenses', idx);
+  return { success: true, message: 'মালিকের খরচ মুছে দেওয়া হয়েছে।' };
+}
+
+/* =========================
+   INITIAL DATA (এক পাসে সব হিসাব)
+========================= */
+
+function getInitialData() {
+  const workers = getWorkers_();
+  const buyers = getWholesalers_();
+  const sales = getSales_();
+  const earnings = getWorkerEarnings_();
+  const withdrawals = getWorkerWithdrawals_();
+  const payments = getWholesalerPayments_();
+  const expenses = getOwnerExpenses_();
+
+  const bt = buyerTotals_(sales, payments);
+  const wt = workerTotals_(earnings, withdrawals);
+
+  const wholesalerSummary = buyers.map(w => {
+    const b = balanceOf_(bt[w.id]);
+    return {
+      id: w.id, name: w.name, phone: w.phone,
+      totalSales: b.gross, entryPaid: b.entryPaid, laterPayments: b.laterPaid,
+      totalPaid: b.totalPaid, due: b.due
+    };
+  });
+
+  const workerSummary = workers.map(w => {
+    const b = workerBalanceOf_(wt[w.id]);
+    return {
+      id: w.id, name: w.name, phone: w.phone, status: w.status,
+      events: b.events, earnings: b.earnings, withdrawals: b.withdrawals, due: b.due
+    };
+  });
+
+  const sum = (arr, k) => arr.reduce((a, x) => a + x[k], 0);
+  const ownerShare = sum(sales, 'ownerShare');
+  const ownerExpenses = sum(expenses, 'amount');
+
+  return {
+    workers: workers,
+    wholesalers: buyers,
+    fish: getFish_().filter(f => f.status === 'Active'),
+    sales: recent_(sales, V2.RECENT),
+    workerSummary: workerSummary,
+    wholesalerSummary: wholesalerSummary,
+    workerWithdrawals: recent_(withdrawals, V2.RECENT),
+    wholesalerPayments: recent_(payments, V2.RECENT),
+    ownerExpenses: recent_(expenses, V2.RECENT),
+    dashboard: {
+      totalSales: sum(sales, 'gross'),
+      ownerShare: ownerShare,
+      workerPool: sum(sales, 'workerPool'),
+      sharedCost: sum(sales, 'sharedCost'),
+      ownerExpenses: ownerExpenses,
+      ownerNet: ownerShare - ownerExpenses,
+      workerEarnings: sum(workerSummary, 'earnings'),
+      workerWithdrawals: sum(workerSummary, 'withdrawals'),
+      workerDue: sum(workerSummary, 'due'),
+      buyerDue: sum(wholesalerSummary, 'due'),
+      salesCount: sales.length
+    }
+  };
+}
+
+/* =========================
+   PROFILES
+========================= */
+
+function byTimeDesc_(x, y) {
+  return String(y.date + y.time).localeCompare(String(x.date + x.time));
+}
+
+function getWholesalerProfile(id) {
+  const buyer = getWholesalers_().find(w => w.id === String(id));
+  if (!buyer) throw new Error('আড়তদার পাওয়া যায়নি।');
+
+  const tx = [];
+  getSales_().filter(s => s.wholesalerId === buyer.id).forEach(s => tx.push({
+    date: s.date, time: s.time, type: 'বিক্রয়',
+    text: s.fishName + ' - ' + s.weight + ' KG',
+    amount: s.gross, paid: s.entryPaid, due: s.entryDue, method: s.paymentStatus
+  }));
+  getWholesalerPayments_().filter(p => p.wholesalerId === buyer.id).forEach(p => tx.push({
+    id: p.id, date: p.date, time: p.time, type: 'পরিশোধ', text: p.notes || 'পরে পরিশোধ',
+    amount: p.amount, paid: p.amount, due: 0, method: p.method
+  }));
+  tx.sort(byTimeDesc_);
+
+  return { buyer: buyer, balance: wholesalerBalance_(buyer.id), transactions: tx };
+}
+
+function getWorkerProfile(id) {
+  const worker = getWorkers_().find(w => w.id === String(id));
+  if (!worker) throw new Error('সহযোগী পাওয়া যায়নি।');
+
+  const tx = [];
+  getWorkerEarnings_().filter(e => e.workerId === worker.id).forEach(e => tx.push({
+    date: e.date, time: e.time, type: 'কাজের আয়', text: 'বিক্রয়: ' + e.saleId,
+    amount: e.earning, method: ''
+  }));
+  getWorkerWithdrawals_().filter(w => w.workerId === worker.id).forEach(w => tx.push({
+    id: w.id, date: w.date, time: w.time, type: 'উত্তোলন', text: w.notes || '',
+    amount: w.amount, method: w.method
+  }));
+  tx.sort(byTimeDesc_);
+
+  return { worker: worker, balance: workerBalance_(worker.id), transactions: tx };
+}
+
+/* =========================
+   DATE RANGE REPORT
+========================= */
+
+function inDateRange_(date, from, to) {
+  if (from && date < from) return false;
+  if (to && date > to) return false;
+  return true;
+}
+
+function getDateReport(from, to) {
+  from = String(from || '');
+  to = String(to || '');
+  if (from && to && from > to) throw new Error('শুরুর তারিখ, শেষ তারিখের পরে হতে পারবে না।');
+
+  const sales = getSales_().filter(s => inDateRange_(s.date, from, to));
+  const payments = getWholesalerPayments_().filter(p => inDateRange_(p.date, from, to));
+  const withdrawals = getWorkerWithdrawals_().filter(w => inDateRange_(w.date, from, to));
+  const expenses = getOwnerExpenses_().filter(e => inDateRange_(e.date, from, to));
+  const earnings = getWorkerEarnings_().filter(e => inDateRange_(e.date, from, to));
+
+  const sum = (arr, k) => arr.reduce((a, x) => a + x[k], 0);
+  const totalSales = sum(sales, 'gross');
+  const sharedCost = sum(sales, 'sharedCost');
+  const ownerShare = sum(sales, 'ownerShare');
+  const workerPool = sum(sales, 'workerPool');
+  const ownerExpenses = sum(expenses, 'amount');
+  const entryPaid = sum(sales, 'entryPaid');
+  const laterPaid = sum(payments, 'amount');
+  const workerEarnings = sum(earnings, 'earning');
+  const workerWithdrawals = sum(withdrawals, 'amount');
+
+  const bm = {};
+  const bget = (id, name) => bm[id] || (bm[id] = { name: name, sales: 0, entryPaid: 0, laterPaid: 0 });
+  sales.forEach(s => { const x = bget(s.wholesalerId, s.wholesalerName); x.sales += s.gross; x.entryPaid += s.entryPaid; });
+  payments.forEach(p => { bget(p.wholesalerId, p.wholesalerName).laterPaid += p.amount; });
+  const buyerReport = Object.keys(bm).map(id => {
+    const x = bm[id];
+    return {
+      id: id, name: x.name, sales: x.sales, entryPaid: x.entryPaid, laterPaid: x.laterPaid,
+      totalPaid: x.entryPaid + x.laterPaid,
+      due: Math.max(0, x.sales - x.entryPaid - x.laterPaid)
+    };
+  });
+
+  const wm = {};
+  const wget = (id, name) => wm[id] || (wm[id] = { name: name, events: 0, earnings: 0, withdrawals: 0 });
+  earnings.forEach(e => { const x = wget(e.workerId, e.workerName); x.events++; x.earnings += e.earning; });
+  withdrawals.forEach(w => { wget(w.workerId, w.workerName).withdrawals += w.amount; });
+  const workerReport = Object.keys(wm).map(id => {
+    const x = wm[id];
+    return {
+      id: id, name: x.name, events: x.events, earnings: x.earnings, withdrawals: x.withdrawals,
+      due: Math.max(0, x.earnings - x.withdrawals)
+    };
+  });
+
+  return {
+    from: from, to: to,
+    sales: sales, payments: payments, withdrawals: withdrawals, expenses: expenses, earnings: earnings,
+    summary: {
+      totalSales: totalSales, sharedCost: sharedCost, ownerShare: ownerShare, workerPool: workerPool,
+      ownerExpenses: ownerExpenses, ownerNet: ownerShare - ownerExpenses,
+      entryPaid: entryPaid, laterPaid: laterPaid,
+      workerEarnings: workerEarnings, workerWithdrawals: workerWithdrawals,
+      workerDue: Math.max(0, workerEarnings - workerWithdrawals)
+    },
+    buyerReport: buyerReport, workerReport: workerReport
+  };
+}
+
+
+/* =========================
+   API + সংরক্ষণ (IndexedDB)
+========================= */
+
+const API_ = {
+  saveWorker, toggleWorker, saveWholesaler, saveFish, updateFish, deleteFish,
+  saveSale, updateSale, deleteSale,
+  saveWholesalerPayment, updateWholesalerPayment, deleteWholesalerPayment,
+  saveWorkerWithdrawal, updateWorkerWithdrawal, deleteWorkerWithdrawal,
+  saveOwnerExpense, updateOwnerExpense, deleteOwnerExpense
+};
+
+function persist_() {
+  const names = Array.from(dirty);
+  dirty.clear();
+  if (!names.length) return Promise.resolve();
+  const batch = {};
+  names.forEach(n => batch[n] = DB[n]);
+  return STORE.save(batch);
+}
+
+/* কাজ + নতুন ডাটা একসাথে। কোনো ভুল হলে ডাটা আগের অবস্থায় ফিরে যায়। */
+function api(name, arg) {
+  const fn = API_[name];
+  if (!fn) throw new Error('অজানা কাজ: ' + name);
+  const snap = JSON.stringify(DB);
+  const rollback = () => { DB = JSON.parse(snap); dirty.clear(); };
+  let result, data;
+  try {
+    result = fn(arg);
+    data = getInitialData();
+  } catch (e) { rollback(); throw e; }
+  return persist_().then(() => ({ result: result, data: data }))
+    .catch(e => { rollback(); throw new Error('ফোনে সংরক্ষণ করা যায়নি (স্টোরেজ ভর্তি?): ' + (e && e.message || e)); });
+}
+
+async function init(store) {
+  STORE = store;
+  const d = emptyDB_();
+  for (const k of Object.keys(SCHEMA)) {
+    const v = await STORE.get(k);
+    d[k] = Array.isArray(v) ? v : [];
+  }
+  DB = d;
+  const m = await STORE.get('__meta');
+  if (m) META = Object.assign(META, m);
+}
+
+/* ---- Backup / Restore ---- */
+function exportBackup() {
+  return { app: 'trawler-hisab', version: 3, exportedAt: nowIso_(), tables: DB };
+}
+function importBackup(obj) {
+  if (!obj || typeof obj !== 'object' || !obj.tables || typeof obj.tables !== 'object') {
+    throw new Error('এটা সঠিক ব্যাকআপ ফাইল নয়।');
+  }
+  const d = emptyDB_();
+  let count = 0;
+  Object.keys(SCHEMA).forEach(k => {
+    const t = obj.tables[k];
+    if (t == null) return;
+    if (!Array.isArray(t)) throw new Error('ব্যাকআপ ফাইল নষ্ট (' + k + ')।');
+    d[k] = t.filter(r => Array.isArray(r) && r[0] !== '' && r[0] != null).map(r => {
+      if (r.length > SCHEMA[k]) throw new Error('ব্যাকআপ ফাইল নষ্ট (' + k + ' কলাম বেশি)।');
+      const x = r.slice();
+      while (x.length < SCHEMA[k]) x.push('');
+      return x;
+    });
+    count += d[k].length;
+  });
+  const snap = JSON.stringify(DB);
+  DB = d;
+  Object.keys(SCHEMA).forEach(k => dirty.add(k));
+  return persist_().then(() => ({ count: count }))
+    .catch(e => { DB = JSON.parse(snap); dirty.clear(); throw new Error('Restore ব্যর্থ: ' + (e && e.message || e)); });
+}
+function markBackupDone() {
+  META.lastBackup = nowIso_();
+  return STORE.save({ __meta: META });
+}
+function getMeta() { return META; }
+function hasData() { return Object.keys(SCHEMA).some(k => DB[k].length > 0); }
+
+return { init, api, getInitialData, getDateReport, getWorkerProfile, getWholesalerProfile,
+         exportBackup, importBackup, markBackupDone, getMeta, hasData };
+
+})();
+
+/* ============ ফোনের স্টোরেজ (IndexedDB) ============ */
+const IDBStore=(function(){
+  let dbp=null;
+  function open(){
+    if(!dbp)dbp=new Promise((res,rej)=>{
+      const r=indexedDB.open('trawler_hisab_db',1);
+      r.onupgradeneeded=()=>r.result.createObjectStore('kv');
+      r.onsuccess=()=>res(r.result);
+      r.onerror=()=>rej(r.error);
+    });
+    return dbp;
+  }
+  return {
+    get:function(k){return open().then(db=>new Promise((res,rej)=>{
+      const q=db.transaction('kv','readonly').objectStore('kv').get(k);
+      q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error);
+    }))},
+    /* একাধিক টেবিল একই transaction-এ — হয় সব সেভ হবে, নয়তো কিছুই না */
+    save:function(batch){return open().then(db=>new Promise((res,rej)=>{
+      const tx=db.transaction('kv','readwrite'),os=tx.objectStore('kv');
+      Object.keys(batch).forEach(k=>os.put(batch[k],k));
+      tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);tx.onabort=()=>rej(tx.error||new Error('abort'));
+    }))}
+  };
+})();
+
+/* আগের google.script.run-এর বদলে লোকাল shim — বাকি কোড অপরিবর্তিত */
+window.google={script:{run:(function(){
+  function make(ok,fail){
+    return new Proxy({},{get:function(_,name){
+      if(name==='withSuccessHandler')return f=>make(f,fail);
+      if(name==='withFailureHandler')return f=>make(ok,f);
+      return function(){
+        const args=arguments;
+        setTimeout(function(){
+          try{
+            Promise.resolve(Server[name].apply(null,args)).then(function(r){ok&&ok(r)},function(e){fail&&fail(e)});
+          }catch(e){fail&&fail(e)}
+        },0);
+      };
+    }});
+  }
+  return make(null,null);
+})()}};
+
+/* ============ STATE ============ */
+let D={workers:[],wholesalers:[],fish:[],sales:[],workerSummary:[],wholesalerSummary:[],workerWithdrawals:[],wholesalerPayments:[],ownerExpenses:[],dashboard:{}};
+let busy=false, curPage='dash', wProfileId='', expEditId='';
+
+/* ============ HELPERS ============ */
+function $(id){return document.getElementById(id)}
+function money(n){return '৳'+Number(n||0).toLocaleString('en-BD',{maximumFractionDigits:2})}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;')}
+function pad(n){return String(n).padStart(2,'0')}
+/* ফোনের স্থানীয় সময় (আগে toISOString UTC ধরত — ভোর ৬টার আগে আগের দিনের তারিখ আসত) */
+function nowDate(){const d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
+function nowTime(){const d=new Date();return pad(d.getHours())+':'+pad(d.getMinutes())}
+function errMsg(e){return (e&&e.message)?e.message.replace(/^Exception:\s*/,''):String(e)}
+
+let toastTimer;
+function toast(msg,isErr){
+  const t=$('toast');t.textContent=msg;t.className=(isErr?'err ':'')+'show';
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>{t.className=''},isErr?5000:2600);
+}
+function setBusy(b){
+  busy=b;
+  $('bar').className=b?'on':'';
+  if(!b){$('bar').style.width='100%';setTimeout(()=>{$('bar').style.width='0'},250)}
+  else $('bar').style.width='';
+  document.querySelectorAll('.btn').forEach(x=>x.disabled=b);
+}
+
+/* ============ SERVER CALLS ============ */
+/* সব লেখার কাজ একটাই server call: কাজ + নতুন ডাটা একসাথে ফেরত আসে */
+function api(name,arg,onOk){
+  if(busy)return;
+  setBusy(true);
+  google.script.run
+    .withSuccessHandler(function(res){
+      setBusy(false);
+      D=res.data;saveCache();render(true);
+      if(onOk)onOk(res.result);
+    })
+    .withFailureHandler(function(e){setBusy(false);toast(errMsg(e),true)})
+    .api(name,arg);
+}
+function call(fn,arg,onOk){
+  google.script.run.withSuccessHandler(onOk).withFailureHandler(e=>toast(errMsg(e),true))[fn](arg);
+}
+
+function saveCache(){}
+
+function load(){
+  setBusy(true);
+  google.script.run
+    .withSuccessHandler(function(x){setBusy(false);D=x;saveCache();render(true)})
+    .withFailureHandler(function(e){setBusy(false);toast(errMsg(e),true)})
+    .getInitialData();
+}
+
+/* ============ RENDER ============ */
+function render(fresh){
+  renderDash();renderWorkers();renderWorkerChecks();renderBuyerSelects();renderFish();renderBuyers();
+  renderSalesHistory();renderExpenseList();renderReports();calc();
+  if(fresh){
+    if(wProfileId&&curPage==='workers')call('getWorkerProfile',wProfileId,showWorkerProfile);
+    if(curPage==='payments'&&$('pbuyer').value)buyerProfile($('pbuyer').value);
+  }
+}
+
+function page(id,btn){
+  curPage=id;
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('on'));
+  $(id).classList.add('on');
+  document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('on'));
+  if(btn)btn.classList.add('on');
+  if(id==='sale'){renderWorkerChecks();renderBuyerSelects();renderFish();renderSalesHistory();calc()}
+  if(id==='report'){renderReports()}
+  if(id==='backup'){renderBackupInfo()}
+  if(id==='payments'){renderBuyerSelects();showBuyerDue()}
+  window.scrollTo(0,0);
+}
+function openSale(){page('sale',document.querySelectorAll('.nav button')[1])}
+
+function renderDash(){
+  const d=D.dashboard||{};
+  renderBackupWarn();
+  $('dsales').textContent=money(d.totalSales);
+  $('downer').textContent=money(d.ownerShare);
+  $('dworker').textContent=money(d.workerPool);
+  $('dshared').textContent=money(d.sharedCost);
+  $('dexp').textContent=money(d.ownerExpenses);
+  $('dnet').textContent=money(d.ownerNet);
+  $('dwdue').textContent=money(d.workerDue);
+  $('dbdue').textContent=money(d.buyerDue);
+  $('recent').innerHTML=D.sales.slice(0,10).map(s=>`<tr><td>${esc(s.date)}</td><td>${esc(s.fishName)}</td><td>${money(s.gross)}</td><td>${money(s.entryPaid)}</td><td>${money(s.entryDue)}</td><td><button class="btn primary smallbtn" onclick="editSale('${esc(s.id)}')">সম্পাদনা</button> <button class="btn danger smallbtn" onclick="deleteSale('${esc(s.id)}')">মুছুন</button></td></tr>`).join('')||'<tr><td colspan="6">কোনো বিক্রয় নেই।</td></tr>';
+}
+
+/* ============ FISH ============ */
+function renderFish(){
+  const old=$('sfish').value;
+  $('sfish').innerHTML='<option value="">-- মাছ নির্বাচন করুন --</option>'+D.fish.map(f=>`<option value="${esc(f.id)}">${esc(f.name)} — ${money(f.price)}/KG</option>`).join('');
+  if(old&&old!=='__old__')$('sfish').value=old;
+  else if(old==='__old__'){const op=document.createElement('option');op.value='__old__';op.textContent=oldFishName;$('sfish').appendChild(op);$('sfish').value='__old__'}
+  $('fishList').innerHTML=D.fish.length?`<div class="table"><table><thead><tr><th>মাছ</th><th>দর/KG</th><th></th></tr></thead><tbody>${D.fish.map(f=>`<tr><td>${esc(f.name)}</td><td>${money(f.price)}</td><td><button class="btn primary smallbtn" onclick="editFish('${esc(f.id)}')">সম্পাদনা</button> <button class="btn danger smallbtn" onclick="deleteFishMaster('${esc(f.id)}')">মুছুন</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="alert">এখনও কোনো মাছের তালিকা নেই।</div>';
+}
+let oldFishName='';
+function fishChanged(){
+  const f=D.fish.find(x=>x.id===$('sfish').value);
+  if(f){$('sprice').value=f.price;calc()}
+}
+function openFish(){$('fishId').value='';$('fishName').value='';$('fishPrice').value='';$('fishModal').classList.add('show');renderFish()}
+function saveFishMaster(){
+  const id=$('fishId').value;
+  const data={id:id,name:$('fishName').value.trim(),price:$('fishPrice').value};
+  api(id?'updateFish':'saveFish',data,r=>{toast(r.message);closeM('fishModal')});
+}
+function editFish(id){
+  const f=D.fish.find(x=>x.id===id);if(!f)return;
+  $('fishId').value=f.id;$('fishName').value=f.name;$('fishPrice').value=f.price;$('fishModal').classList.add('show');
+}
+function deleteFishMaster(id){
+  if(!confirm('এই মাছের তালিকা মুছে ফেলবেন? পুরোনো বিক্রয় মুছবে না।'))return;
+  api('deleteFish',id,r=>toast(r.message));
+}
+
+/* ============ SALES ============ */
+function renderSalesHistory(){
+  $('salesHistory').innerHTML=D.sales.map(s=>`<tr><td>${esc(s.date)}</td><td>${esc(s.fishName)}</td><td>${esc(s.wholesalerName)}</td><td>${money(s.gross)}</td><td>${money(s.entryPaid)}</td><td>${money(s.entryDue)}</td><td><button class="btn primary smallbtn" onclick="editSale('${esc(s.id)}')">সম্পাদনা</button> <button class="btn danger smallbtn" onclick="deleteSale('${esc(s.id)}')">মুছুন</button></td></tr>`).join('')||'<tr><td colspan="7">কোনো বিক্রয় নেই।</td></tr>';
+}
+
+function editSale(id){
+  const s=D.sales.find(x=>x.id===id);if(!s)return;
+  page('sale',document.querySelectorAll('.nav button')[1]);
+  $('editSaleId').value=s.id;$('sdate').value=s.date;$('stime').value=s.time;$('strip').value=s.tripId;
+  renderWorkerChecks(s.workerIds);            // নিষ্ক্রিয় সহযোগীও দেখাবে, যেন edit-এ বাদ না পড়ে
+  const fish=D.fish.find(f=>f.name===s.fishName);
+  oldFishName=s.fishName;renderFish();
+  if(fish)$('sfish').value=fish.id;
+  else{
+    const op=document.createElement('option');op.value='__old__';op.textContent=s.fishName;
+    $('sfish').appendChild(op);$('sfish').value='__old__';
+  }
+  $('sweight').value=s.weight;$('sprice').value=s.price;$('sbuyer').value=s.wholesalerId;$('spaid').value=s.entryPaid;
+  $('soil').value=s.oilLiters;$('soilc').value=s.oilCost;$('sfood').value=s.foodCost;$('sother').value=s.otherSharedCost;$('snotes').value=s.notes;
+  document.querySelectorAll('.wcheck').forEach(x=>x.checked=s.workerIds.includes(x.value));
+  $('saleSaveBtn').textContent='✏️ বিক্রয় সম্পাদনা সংরক্ষণ';$('saleCancelEditBtn').style.display='inline-block';
+  calc();window.scrollTo({top:0,behavior:'smooth'});
+}
+function cancelSaleEdit(){
+  $('editSaleId').value='';oldFishName='';
+  $('saleSaveBtn').textContent='💾 বিক্রয় সংরক্ষণ';$('saleCancelEditBtn').style.display='none';
+  $('sdate').value=nowDate();$('stime').value=nowTime();
+  $('sweight').value='';$('sprice').value='';$('spaid').value='0';$('soil').value='';$('soilc').value='0';$('sfood').value='0';$('sother').value='0';$('snotes').value='';$('strip').value='';
+  $('sfish').value='';
+  document.querySelectorAll('.wcheck').forEach(x=>x.checked=false);
+  renderFish();calc();
+}
+function deleteSale(id){
+  if(!confirm('এই বিক্রয় মুছে ফেলবেন? এই বিক্রয়-এর সহযোগীর আয়ও বাতিল হবে এবং আড়তদারের পাওনা পুনরায় হিসাব হবে।'))return;
+  api('deleteSale',id,r=>toast(r.message));
+}
+
+function fishNameValue(){
+  const id=$('sfish').value;
+  const f=D.fish.find(x=>x.id===id);
+  return f?f.name:(id==='__old__'?oldFishName:'');
+}
+
+function saveSale(){
+  const data={saleId:$('editSaleId').value,date:$('sdate').value,time:$('stime').value,tripId:$('strip').value,
+    fishName:fishNameValue(),weight:$('sweight').value,price:$('sprice').value,
+    wholesalerId:$('sbuyer').value,entryPaid:$('spaid').value,
+    oilLiters:$('soil').value,oilCost:$('soilc').value,foodCost:$('sfood').value,
+    otherSharedCost:$('sother').value,workerIds:selectedWorkers(),notes:$('snotes').value};
+  if(!data.wholesalerId){toast('আড়তদার নির্বাচন করুন।',true);return}
+  if(!data.fishName||Number(data.weight)<=0||Number(data.price)<=0){toast('মাছ, ওজন ও দাম দিন।',true);return}
+  api(data.saleId?'updateSale':'saveSale',data,r=>{
+    toast(r.message||'সংরক্ষণ হয়েছে।');
+    cancelSaleEdit();
+  });
+}
+
+/* ============ WORKERS ============ */
+function openWorker(){$('workerModal').classList.add('show')}
+function openBuyer(){$('buyerModal').classList.add('show')}
+function closeM(id){$(id).classList.remove('show')}
+
+function saveWorker(){
+  const data={name:$('wname').value.trim(),phone:$('wphone').value,address:$('waddress').value,joinDate:nowDate()};
+  api('saveWorker',data,r=>{
+    toast(r.message);closeM('workerModal');
+    $('wname').value='';$('wphone').value='';$('waddress').value='';
+  });
+}
+
+/* আগে থেকে টিক দেওয়া সহযোগী render-এ হারাত — এখন সংরক্ষিত থাকে */
+function renderWorkerChecks(extraIds){
+  const keep=new Set(selectedWorkers());
+  const ed=D.sales.find(x=>x.id===$('editSaleId').value);
+  const extra=(extraIds||[]).concat(ed?ed.workerIds:[]);
+  extra.forEach(i=>keep.add(i));
+  const list=D.workers.filter(w=>w.status==='Active'||extra.includes(w.id));
+  $('workersEmpty').style.display=list.length?'none':'block';
+  $('workerChecks').innerHTML=list.map((w,i)=>
+    '<div class="witem"><label><input class="wcheck" type="checkbox" value="'+esc(w.id)+'"'+(keep.has(w.id)?' checked':'')+' onchange="calc()"> <span><b>'+(i+1)+'. '+esc(w.name)+(w.status!=='Active'?' (নিষ্ক্রিয়)':'')+'</b><br><small>'+esc(w.phone)+'</small></span></label></div>'
+  ).join('');
+}
+function selectedWorkers(){return Array.from(document.querySelectorAll('.wcheck:checked')).map(x=>x.value)}
+
+function calc(){
+  const gross=Number($('sweight').value||0)*Number($('sprice').value||0);
+  const shared=Number($('soilc').value||0)+Number($('sfood').value||0)+Number($('sother').value||0);
+  const net=Math.max(0,gross-shared),owner=net/2,pool=net/2;
+  const ids=selectedWorkers(),each=ids.length?pool/ids.length:0;
+  const paid=Number($('spaid').value||0),due=Math.max(0,gross-paid);
+  $('pgross').textContent=money(gross);$('pshared').textContent=money(shared);
+  $('pnet').textContent=money(net);$('powner').textContent=money(owner);
+  $('ppool').textContent=money(pool);$('peach').textContent=money(each);
+  $('sdue').value=money(due);
+  $('wcount').textContent=ids.length+' / 6 জন নির্বাচিত';
+}
+
+function renderWorkers(){
+  if(!wProfileId){
+    $('workerList').innerHTML=D.workers.length?
+      '<div class="table"><table><thead><tr><th>নাম</th><th>মোবাইল</th><th>অবস্থা</th><th>কাজ</th></tr></thead><tbody>'+
+      D.workers.map(w=>'<tr><td>'+esc(w.name)+'</td><td>'+esc(w.phone)+'</td><td>'+esc(w.status==='Active'?'সক্রিয়':'নিষ্ক্রিয়')+'</td><td><button class="btn orange smallbtn" onclick="toggleW(\''+esc(w.id)+'\')">'+(w.status==='Active'?'নিষ্ক্রিয় করুন':'সক্রিয় করুন')+'</button> <button class="btn primary smallbtn" onclick="workerProfile(\''+esc(w.id)+'\')">বিস্তারিত</button></td></tr>').join('')+
+      '</tbody></table></div>'
+      :'<div class="alert warn">কোনো সহযোগী নেই। + সহযোগী যোগ করুন চাপুন।</div>';
+  }
+  $('workerSummary').innerHTML=D.workerSummary.map(w=>
+    '<tr><td>'+esc(w.name)+'</td><td>'+w.events+'</td><td>'+money(w.earnings)+'</td><td>'+money(w.withdrawals)+'</td><td><b>'+money(w.due)+'</b></td><td><button class="btn success smallbtn" onclick="withdraw(\''+esc(w.id)+'\')">উত্তোলন</button> <button class="btn primary smallbtn" onclick="workerProfile(\''+esc(w.id)+'\')">বিস্তারিত</button></td></tr>'
+  ).join('');
+}
+
+function toggleW(id){api('toggleWorker',id)}
+
+function withdraw(id){
+  const w=D.workerSummary.find(x=>x.id===id);
+  if(!w)return;
+  if(w.due<=0){toast('এই সহযোগীর বর্তমানে কোনো পাওনা নেই।',true);return}
+  $('wdentryid').value='';$('wdid').value=id;$('wdname').textContent=w.name;$('wddue').textContent=money(w.due);
+  $('wdamount').value='';$('wdnotes').value='';$('wddate').value=nowDate();$('wdtime').value=nowTime();
+  $('withdrawModal').classList.add('show');
+}
+
+function saveWithdrawal(){
+  const data={withdrawalId:$('wdentryid').value,workerId:$('wdid').value,date:$('wddate').value,time:$('wdtime').value,amount:$('wdamount').value,method:$('wdmethod').value,notes:$('wdnotes').value};
+  api(data.withdrawalId?'updateWorkerWithdrawal':'saveWorkerWithdrawal',data,r=>{
+    toast(r.message+' বর্তমান পাওনা: '+money(r.due||0));closeM('withdrawModal');$('wdentryid').value='';
+  });
+}
+
+function workerProfile(id){
+  wProfileId=id;
+  if(curPage!=='workers')page('workers',document.querySelectorAll('.nav button')[2]);
+  call('getWorkerProfile',id,showWorkerProfile);
+}
+function backToWorkers(){wProfileId='';renderWorkers()}
+
+function showWorkerProfile(p){
+  $('withdrawModal').classList.remove('show');
+  let h='<button class="btn gray smallbtn" onclick="backToWorkers()">← সহযোগী তালিকা</button><br><br>';
+  h+='<div class="profile-head"><h3>'+esc(p.worker.name)+'</h3><div>মোট কাজের আয়: <b>'+money(p.balance.earnings)+'</b></div><div>মোট উত্তোলন: <b>'+money(p.balance.withdrawals)+'</b></div><div>বর্তমান পাওনা: <b>'+money(p.balance.due)+'</b></div></div><br>';
+  h+='<button class="btn success" onclick="withdraw(\''+esc(p.worker.id)+'\')">💵 উত্তোলন</button><h3>লেনদেনের ইতিহাস</h3>';
+  h+=p.transactions.length?p.transactions.map(t=>'<div class="txn"><b>'+esc(t.date)+' '+esc(t.time)+'</b> — '+esc(t.type)+' — <span class="money">'+money(t.amount)+'</span> '+esc(t.method||'')+'<br><small>'+esc(t.text||'')+'</small>'+(t.type==='উত্তোলন'?'<br><button class="btn primary smallbtn" onclick="editWithdrawal(\''+esc(t.id)+'\')">সম্পাদনা</button> <button class="btn danger smallbtn" onclick="deleteWithdrawal(\''+esc(t.id)+'\')">মুছুন</button>':'')+'</div>').join(''):'<div class="alert">কোনো লেনদেন নেই।</div>';
+  $('workerList').innerHTML=h;
+}
+
+function editWithdrawal(entryId){
+  const t=(D.workerWithdrawals||[]).find(x=>x.id===entryId);if(!t){toast('Entry পাওয়া যায়নি।',true);return}
+  const w=D.workerSummary.find(x=>x.id===t.workerId);if(!w)return;
+  $('wdentryid').value=entryId;$('wdid').value=w.id;$('wdname').textContent=w.name;
+  $('wddue').textContent=money(w.due+t.amount);$('wdamount').value=t.amount;$('wddate').value=t.date;$('wdtime').value=t.time;$('wdmethod').value=t.method||'Cash';$('wdnotes').value=t.notes||'';
+  $('withdrawModal').classList.add('show');
+}
+function deleteWithdrawal(id){
+  if(!confirm('এই সহযোগীর উত্তোলনের entry মুছে ফেলবেন? তাহলে আগের পাওনা আবার যোগ হবে।'))return;
+  api('deleteWorkerWithdrawal',id,r=>toast(r.message));
+}
+
+/* ============ BUYERS ============ */
+function renderBuyerSelects(){
+  ['sbuyer','pbuyer'].forEach(id=>{
+    const old=$(id).value;
+    $(id).innerHTML='<option value="">-- নির্বাচন করুন --</option>'+D.wholesalers.map(w=>'<option value="'+esc(w.id)+'">'+esc(w.name)+'</option>').join('');
+    if(old)$(id).value=old;
+  });
+}
+
+function renderBuyers(){
+  $('buyerList').innerHTML=D.wholesalerSummary.length?
+    '<div class="table"><table><thead><tr><th>আড়তদার</th><th>বিক্রয়</th><th>অগ্রিম প্রাপ্তি</th><th>পরবর্তী পরিশোধ</th><th>মোট প্রাপ্তি</th><th>পাওনা</th><th></th></tr></thead><tbody>'+
+    D.wholesalerSummary.map(w=>'<tr><td>'+esc(w.name)+'</td><td>'+money(w.totalSales)+'</td><td>'+money(w.entryPaid)+'</td><td>'+money(w.laterPayments)+'</td><td>'+money(w.totalPaid)+'</td><td><b>'+money(w.due)+'</b></td><td><button class="btn primary smallbtn" onclick="openBuyerPayments(\''+esc(w.id)+'\')">বিস্তারিত / পরিশোধ</button></td></tr>').join('')+
+    '</tbody></table></div>':'<div class="alert warn">কোনো আড়তদার নেই।</div>';
+}
+function openBuyerPayments(id){
+  $('pbuyer').value=id;
+  page('payments',document.querySelectorAll('.nav button')[4]);
+}
+
+function saveBuyer(){
+  const data={name:$('bname').value.trim(),phone:$('bphone').value,address:$('baddress').value};
+  api('saveWholesaler',data,r=>{
+    toast(r.message);closeM('buyerModal');
+    $('bname').value='';$('bphone').value='';$('baddress').value='';
+  });
+}
+
+/* ============ PAYMENTS ============ */
+function showBuyerDue(){
+  const id=$('pbuyer').value;
+  const w=D.wholesalerSummary.find(x=>x.id===id);
+  $('pbdue').value=w?money(w.due):money(0);
+  if(id)buyerProfile(id);else $('buyerProfile').innerHTML='<div class="alert">আড়তদার নির্বাচন করুন।</div>';
+}
+
+function resetPayment(){
+  $('paymentId').value='';$('pamount').value='';$('pnotes').value='';
+  $('pdate').value=nowDate();$('ptime').value=nowTime();
+  $('paySaveBtn').textContent='💾 পরিশোধ সংরক্ষণ';$('payCancelBtn').style.display='none';
+}
+
+function savePayment(){
+  const data={paymentId:$('paymentId').value,wholesalerId:$('pbuyer').value,date:$('pdate').value,time:$('ptime').value,amount:$('pamount').value,method:$('pmethod').value,notes:$('pnotes').value};
+  api(data.paymentId?'updateWholesalerPayment':'saveWholesalerPayment',data,r=>{
+    toast(r.message+' বর্তমান পাওনা: '+money(r.due||0));
+    resetPayment();showBuyerDue();
+  });
+}
+
+function buyerProfile(id){call('getWholesalerProfile',id,showBuyerProfile)}
+
+function showBuyerProfile(p){
+  const b=p.balance;
+  let h='<div class="profile-head"><h3>'+esc(p.buyer.name)+'</h3><div>মোট বিক্রয়: <b>'+money(b.gross)+'</b></div><div>অগ্রিম প্রাপ্তি: <b>'+money(b.entryPaid)+'</b></div><div>পরে পাওয়া: <b>'+money(b.laterPaid)+'</b></div><div>মোট পাওয়া: <b>'+money(b.totalPaid)+'</b></div><div>বর্তমান পাওনা: <b>'+money(b.due)+'</b></div></div><br><h3>লেনদেনের ইতিহাস</h3>';
+  h+=p.transactions.length?p.transactions.map(t=>'<div class="txn"><b>'+esc(t.date)+' '+esc(t.time)+'</b> — '+esc(t.type)+' — '+esc(t.text)+' — <span class="money">'+money(t.amount)+'</span> '+esc(t.method||'')+(t.type==='বিক্রয়'?'<br><small>অগ্রিম প্রাপ্তি: '+money(t.paid)+' | অবশিষ্ট পাওনা: '+money(t.due)+'</small>':'')+(t.type==='পরিশোধ'?'<br><button class="btn primary smallbtn" onclick="editPayment(\''+esc(t.id)+'\')">সম্পাদনা</button> <button class="btn danger smallbtn" onclick="deletePayment(\''+esc(t.id)+'\')">মুছুন</button>':'')+'</div>').join(''):'<div class="alert">কোনো লেনদেন নেই।</div>';
+  $('buyerProfile').innerHTML=h;
+}
+
+function editPayment(id){
+  const t=(D.wholesalerPayments||[]).find(x=>x.id===id);if(!t){toast('পরিশোধ entry পাওয়া যায়নি।',true);return}
+  $('paymentId').value=id;$('pbuyer').value=t.wholesalerId;$('pdate').value=t.date;$('ptime').value=t.time;$('pamount').value=t.amount;$('pmethod').value=t.method||'Cash';$('pnotes').value=t.notes||'';
+  $('paySaveBtn').textContent='✏️ পরিশোধ সম্পাদনা সংরক্ষণ';$('payCancelBtn').style.display='inline-block';
+  const w=D.wholesalerSummary.find(x=>x.id===t.wholesalerId);
+  $('pbdue').value=w?money(w.due):money(0);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function deletePayment(id){
+  if(!confirm('এই পরিশোধ entry মুছে ফেলবেন? তাহলে আড়তদারের পাওনা আবার বাড়বে।'))return;
+  api('deleteWholesalerPayment',id,r=>toast(r.message));
+}
+
+/* ============ REPORTS ============ */
+function renderReports(){
+  $('reportBuyer').innerHTML=D.wholesalerSummary.map(w=>'<tr><td>'+esc(w.name)+'</td><td>'+money(w.totalSales)+'</td><td>'+money(w.entryPaid)+'</td><td>'+money(w.laterPayments)+'</td><td>'+money(w.totalPaid)+'</td><td><b>'+money(w.due)+'</b></td></tr>').join('');
+  $('reportWorker').innerHTML=D.workerSummary.map(w=>'<tr><td>'+esc(w.name)+'</td><td>'+w.events+'</td><td>'+money(w.earnings)+'</td><td>'+money(w.withdrawals)+'</td><td><b>'+money(w.due)+'</b></td></tr>').join('');
+}
+function runDateReport(){
+  const from=$('rfrom').value,to=$('rto').value;
+  setBusy(true);
+  google.script.run
+    .withSuccessHandler(r=>{setBusy(false);showDateReport(r)})
+    .withFailureHandler(e=>{setBusy(false);toast(errMsg(e),true)})
+    .getDateReport(from,to);
+}
+function clearDateReport(){$('rfrom').value='';$('rto').value='';runDateReport()}
+function showDateReport(r){
+  const x=r.summary;
+  let h='<div class="stats">'+
+    '<div class="stat"><small>মোট বিক্রয়</small><b>'+money(x.totalSales)+'</b></div>'+
+    '<div class="stat"><small>যৌথ খরচ</small><b>'+money(x.sharedCost)+'</b></div>'+
+    '<div class="stat"><small>মালিকের অংশ</small><b>'+money(x.ownerShare)+'</b></div>'+
+    '<div class="stat"><small>সহযোগীদের অংশ</small><b>'+money(x.workerPool)+'</b></div>'+
+    '<div class="stat"><small>মালিকের খরচ</small><b>'+money(x.ownerExpenses)+'</b></div>'+
+    '<div class="stat"><small>মালিকের নিট প্রাপ্য</small><b>'+money(x.ownerNet)+'</b></div>'+
+    '<div class="stat"><small>সহযোগীদের প্রাপ্য</small><b>'+money(x.workerEarnings)+'</b></div>'+
+    '<div class="stat"><small>সহযোগীদের উত্তোলন</small><b>'+money(x.workerWithdrawals)+'</b></div></div>';
+  h+='<h3>আড়তদার (নির্বাচিত তারিখ)</h3><div class="table"><table><thead><tr><th>আড়তদার</th><th>বিক্রয়</th><th>Entry</th><th>পরে</th><th>মোট প্রাপ্তি</th><th>পাওনা</th></tr></thead><tbody>'+r.buyerReport.map(w=>'<tr><td>'+esc(w.name)+'</td><td>'+money(w.sales)+'</td><td>'+money(w.entryPaid)+'</td><td>'+money(w.laterPaid)+'</td><td>'+money(w.totalPaid)+'</td><td>'+money(w.due)+'</td></tr>').join('')+'</tbody></table></div>';
+  h+='<h3>সহযোগী (নির্বাচিত তারিখ)</h3><div class="table"><table><thead><tr><th>সহযোগী</th><th>কাজ</th><th>আয়</th><th>উত্তোলন</th><th>পাওনা</th></tr></thead><tbody>'+r.workerReport.map(w=>'<tr><td>'+esc(w.name)+'</td><td>'+w.events+'</td><td>'+money(w.earnings)+'</td><td>'+money(w.withdrawals)+'</td><td>'+money(w.due)+'</td></tr>').join('')+'</tbody></table></div>';
+  h+='<h3>নতুন বিক্রয়ের তালিকা</h3><div class="table"><table><thead><tr><th>তারিখ</th><th>মাছ</th><th>KG</th><th>দর</th><th>Gross</th><th>যৌথ খরচ</th><th>মালিক</th><th>সহযোগী</th></tr></thead><tbody>'+r.sales.map(s=>'<tr><td>'+esc(s.date)+'</td><td>'+esc(s.fishName)+'</td><td>'+s.weight+'</td><td>'+money(s.price)+'</td><td>'+money(s.gross)+'</td><td>'+money(s.sharedCost)+'</td><td>'+money(s.ownerShare)+'</td><td>'+money(s.workerPool)+'</td></tr>').join('')+'</tbody></table></div>';
+  h+='<h3>মালিকের খরচ</h3><div class="table"><table><thead><tr><th>তারিখ</th><th>ধরন</th><th>বিবরণ</th><th>Amount</th></tr></thead><tbody>'+r.expenses.map(e=>'<tr><td>'+esc(e.date)+'</td><td>'+esc(e.category)+'</td><td>'+esc(e.description)+'</td><td>'+money(e.amount)+'</td></tr>').join('')+'</tbody></table></div>';
+  $('dateReportBox').innerHTML=h;
+}
+
+/* ============ EXPENSES ============ */
+function renderExpenseList(){
+  $('expenseList').innerHTML=(D.ownerExpenses||[]).map(e=>'<tr><td>'+esc(e.date)+'</td><td>'+esc(e.category)+'</td><td>'+esc(e.description)+'</td><td>'+money(e.amount)+'</td><td><button class="btn primary smallbtn" onclick="editExpense(\''+esc(e.id)+'\')">সম্পাদনা</button> <button class="btn danger smallbtn" onclick="deleteExpense(\''+esc(e.id)+'\')">মুছুন</button></td></tr>').join('')||'<tr><td colspan="5">কোনো খরচ নেই।</td></tr>';
+}
+function resetExpense(){
+  expEditId='';$('eamount').value='';$('edesc').value='';
+  $('edate').value=nowDate();$('etime').value=nowTime();
+  $('expSaveBtn').textContent='💾 সংরক্ষণ';$('expCancelBtn').style.display='none';
+}
+function editExpense(id){
+  const e=(D.ownerExpenses||[]).find(x=>x.id===id);if(!e)return;
+  expEditId=id;
+  $('edate').value=e.date;$('etime').value=e.time;$('ecat').value=e.category;$('eamount').value=e.amount;$('edesc').value=e.description;
+  $('expSaveBtn').textContent='✏️ সম্পাদনা সংরক্ষণ';$('expCancelBtn').style.display='inline-block';
+  window.scrollTo({top:0,behavior:'smooth'});$('eamount').focus();
+}
+function deleteExpense(id){
+  if(!confirm('এই মালিকের খরচ মুছে ফেলবেন?'))return;
+  api('deleteOwnerExpense',id,r=>{toast(r.message);if(expEditId===id)resetExpense()});
+}
+function saveExpense(){
+  const data={expenseId:expEditId,date:$('edate').value,time:$('etime').value,category:$('ecat').value,amount:$('eamount').value,description:$('edesc').value};
+  api(data.expenseId?'updateOwnerExpense':'saveOwnerExpense',data,r=>{toast(r.message);resetExpense()});
+}
+
+/* ============ BACKUP / RESTORE ============ */
+function daysSince(iso){return iso?Math.floor((Date.now()-new Date(iso).getTime())/86400000):null}
+function renderBackupWarn(){
+  const el=$('backupWarn');if(!el)return;
+  if(!Server.hasData()){el.style.display='none';return}
+  const m=Server.getMeta(),days=daysSince(m.lastBackup);
+  if(days===null||days>=7){
+    el.style.display='block';
+    el.innerHTML='⚠️ '+(days===null?'এখনো কোনো ব্যাকআপ নেওয়া হয়নি।':'শেষ ব্যাকআপ '+days+' দিন আগে।')+' <a href="#" onclick="page(\'backup\',document.querySelectorAll(\'.nav button\')[7]);return false">এখনই ব্যাকআপ নিন</a>';
+  }else el.style.display='none';
+}
+function renderBackupInfo(){
+  const m=Server.getMeta();
+  $('backupInfo').innerHTML=m.lastBackup?('শেষ ব্যাকআপ: <b>'+esc(new Date(m.lastBackup).toLocaleString('bn-BD'))+'</b>'):'এখনো কোনো ব্যাকআপ নেওয়া হয়নি।';
+  if(navigator.storage&&navigator.storage.estimate){
+    navigator.storage.estimate().then(e=>{
+      const mb=(e.usage/1048576).toFixed(2);
+      $('storageInfo').textContent='ফোনে ব্যবহৃত জায়গা: '+mb+' MB'+(persistGranted===true?' • স্থায়ী স্টোরেজ: চালু ✅':persistGranted===false?' • স্থায়ী স্টোরেজ: ব্রাউজার দেয়নি (ব্যাকআপ নিয়মিত রাখুন)':'');
+    }).catch(()=>{});
+  }
+}
+let persistGranted=null;
+function backupFile(){
+  const json=JSON.stringify(Server.exportBackup());
+  const name='trawler-backup-'+nowDate()+'.json';
+  return {json:json,name:name,file:new File([json],name,{type:'application/json'})};
+}
+function downloadBackup(){
+  const b=backupFile();
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([b.json],{type:'application/json'}));
+  a.download=b.name;document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500);
+  Server.markBackupDone().then(()=>{toast('ব্যাকআপ ডাউনলোড হয়েছে: '+b.name);renderBackupInfo();renderBackupWarn()});
+}
+function shareBackup(){
+  const b=backupFile();
+  if(navigator.canShare&&navigator.canShare({files:[b.file]})){
+    navigator.share({files:[b.file],title:'ট্রলার হিসাব ব্যাকআপ'}).then(()=>Server.markBackupDone()).then(()=>{toast('ব্যাকআপ পাঠানো হয়েছে।');renderBackupInfo();renderBackupWarn()}).catch(e=>{if(e&&e.name!=='AbortError')toast('Share হয়নি, ডাউনলোড করুন।',true)});
+  }else downloadBackup();
+}
+function restoreFile(inp){
+  const f=inp.files&&inp.files[0];if(!f)return;
+  const rd=new FileReader();
+  rd.onload=function(){
+    let obj;
+    try{obj=JSON.parse(rd.result)}catch(e){toast('ফাইলটি পড়া যায়নি — সঠিক ব্যাকআপ ফাইল দিন।',true);inp.value='';return}
+    if(!confirm('এই ফোনের বর্তমান সব ডাটা মুছে ব্যাকআপ ফাইলের ডাটা বসানো হবে। নিশ্চিত?')){inp.value='';return}
+    setBusy(true);
+    Server.importBackup(obj).then(r=>{
+      setBusy(false);inp.value='';wProfileId='';
+      toast('Restore সম্পন্ন: '+r.count+'টি রেকর্ড ফেরত এসেছে।');load();
+    }).catch(e=>{setBusy(false);inp.value='';toast(errMsg(e),true)});
+  };
+  rd.readAsText(f);
+}
+let deferredInstall=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;const b=$('installBtn');if(b)b.style.display='inline-block'});
+window.addEventListener('appinstalled',()=>{deferredInstall=null;const b=$('installBtn');if(b)b.style.display='none';toast('অ্যাপ ইনস্টল হয়েছে ✅')});
+function installApp(){if(deferredInstall){deferredInstall.prompt();deferredInstall=null}}
+
+/* ============ INIT ============ */
+initDates();
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}
+if(navigator.storage&&navigator.storage.persist){navigator.storage.persist().then(g=>{persistGranted=g}).catch(()=>{})}
+Server.init(IDBStore).then(()=>{load()}).catch(e=>toast('ডাটাবেস চালু করা যায়নি: '+errMsg(e),true));
+</script>
+</body>
+</html>
